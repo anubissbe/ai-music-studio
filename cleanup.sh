@@ -67,7 +67,7 @@ done
 if ! docker-compose ps | grep -q "Up"; then
   echo -e "${YELLOW}[WARNING] AI Music Generation System does not appear to be running.${NC}"
   echo -e "${YELLOW}[WARNING] Database operations may fail, but file cleanup can proceed.${NC}"
-  
+
   read -p "Continue anyway? (y/n) " -n 1 -r
   echo
   if [[ ! $REPLY =~ ^[Yy]$ ]]; then
@@ -88,7 +88,7 @@ echo
 if [ "$BACKUP" = true ]; then
   echo -e "${YELLOW}[INFO] Creating backup before cleanup...${NC}"
   BACKUP_FILE="music_backup_$(date +%Y%m%d_%H%M%S).tar.gz"
-  
+
   if [ "$DRY_RUN" = true ]; then
     echo -e "${YELLOW}[DRY RUN] Would create backup: $BACKUP_FILE${NC}"
   else
@@ -101,21 +101,21 @@ fi
 # Get list of files to delete from the database (excluding favorites if requested)
 if docker-compose ps | grep -q "Up"; then
   echo -e "${YELLOW}[INFO] Finding tracks to clean up from database...${NC}"
-  
+
   FAVORITES_CLAUSE=""
   if [ "$KEEP_FAVORITES" = true ]; then
     FAVORITES_CLAUSE="AND favorite: false"
   fi
-  
+
   MONGO_QUERY="db.tracks.find({createdAt: {\$lt: new Date(Date.now() - ${DAYS_OLD} * 24 * 60 * 60 * 1000)} $FAVORITES_CLAUSE}, {filePath: 1}).toArray()"
-  
+
   FILES_TO_DELETE=$(docker-compose exec -T mongodb mongosh music_generation --quiet --eval "$MONGO_QUERY" | grep filePath | sed 's/.*filePath: "\(.*\)".*/\1/')
-  
+
   # Count files to delete
   FILE_COUNT=$(echo "$FILES_TO_DELETE" | grep -v "^$" | wc -l)
-  
+
   echo -e "${YELLOW}[INFO] Found $FILE_COUNT database tracks older than $DAYS_OLD days to delete.${NC}"
-  
+
   # Delete database entries
   if [ "$DRY_RUN" = true ]; then
     echo -e "${YELLOW}[DRY RUN] Would delete $FILE_COUNT database entries.${NC}"
@@ -153,9 +153,9 @@ if [ "$DELETE_UPLOADS" = true ]; then
   echo -e "${YELLOW}[INFO] Cleaning up uploaded files...${NC}"
   UPLOAD_FILES=$(find uploads -type f -mtime +$DAYS_OLD)
   UPLOAD_COUNT=$(echo "$UPLOAD_FILES" | grep -v "^$" | wc -l)
-  
+
   echo -e "${YELLOW}[INFO] Found $UPLOAD_COUNT uploaded files older than $DAYS_OLD days to delete.${NC}"
-  
+
   if [ "$DRY_RUN" = true ]; then
     echo -e "${YELLOW}[DRY RUN] Would delete $UPLOAD_COUNT uploaded files.${NC}"
   else

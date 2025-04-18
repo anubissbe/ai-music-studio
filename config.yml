@@ -38,7 +38,7 @@ models:
   max_loaded_models: 2
   # Model loading timeout in seconds
   loading_timeout: 120
-  
+
   # Model-specific settings
   musicgen:
     # Model size (melody, medium, small, large)
@@ -47,7 +47,7 @@ models:
     duration: 30
     # Temperature for sampling (higher = more random)
     temperature: 0.95
-    
+
   jukebox:
     # Model level (1, 2, 3)
     level: 3
@@ -57,9 +57,9 @@ models:
     top_p: 0.95
     # Temperature for sampling
     temperature: 0.98
-    
+
   # Other model settings...
-  
+
 # Audio Processing Settings
 audio:
   # Normalize output audio
@@ -73,7 +73,7 @@ audio:
   loudness_normalization: true
   # Target loudness in LUFS
   target_loudness: -14
-  
+
 # Web Interface Settings
 web:
   # Enable dark mode by default
@@ -88,7 +88,7 @@ web:
   enable_visualization: true
   # Enable keyboard shortcuts
   enable_shortcuts: true
-  
+
 # Security Settings
 security:
   # Require authentication

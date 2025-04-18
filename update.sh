@@ -49,20 +49,20 @@ echo -e "${GREEN}[SUCCESS] Backup created in ${BACKUP_DIR}${NC}"
 if [ -d .git ]; then
   echo -e "${YELLOW}[INFO] Pulling latest changes from git repository...${NC}"
   git fetch
-  
+
   LOCAL=$(git rev-parse HEAD)
   REMOTE=$(git rev-parse @{u})
-  
+
   if [ "$LOCAL" != "$REMOTE" ]; then
     echo -e "${YELLOW}[INFO] Updates available. Pulling changes...${NC}"
     git pull
-    
+
     # Check for merge conflicts
     if [ $? -ne 0 ]; then
       echo -e "${RED}[ERROR] Git pull failed. Please resolve conflicts manually.${NC}"
       exit 1
     fi
-    
+
     echo -e "${GREEN}[SUCCESS] Code updated from repository.${NC}"
   else
     echo -e "${GREEN}[INFO] Already up-to-date with the repository.${NC}"
@@ -100,7 +100,7 @@ try:
         user_config = yaml.safe_load(f)
     with open('config.yml', 'r') as f:
         new_config = yaml.safe_load(f)
-    
+
     # Merge configurations while preserving user settings
     def merge_dicts(user_dict, new_dict):
         for k, v in new_dict.items():
@@ -109,12 +109,12 @@ try:
             elif k not in user_dict:
                 user_dict[k] = v
         return user_dict
-    
+
     merged_config = merge_dicts(user_config, new_config)
-    
+
     with open('config.yml', 'w') as f:
         yaml.dump(merged_config, f, default_flow_style=False)
-    
+
     print('\033[0;32m[SUCCESS] Configuration merged successfully.\033[0m')
 except Exception as e:
     print(f'\033[0;31m[ERROR] Failed to merge configurations: {str(e)}\033[0m')

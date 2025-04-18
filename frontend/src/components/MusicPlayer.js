@@ -34,7 +34,6 @@ const MusicPlayer = ({ track, onExtend, isExtending }) => {
         barGap: 2,
         responsive: true,
         normalize: true,
-        backend: 'WebAudio',
       });
 
       // Load audio

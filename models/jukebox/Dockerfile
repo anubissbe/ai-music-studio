@@ -2,7 +2,9 @@ FROM pytorch/pytorch:2.0.1-cuda11.7-cudnn8-runtime
 
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies - using noninteractive to avoid timezone prompts
+ENV DEBIAN_FRONTEND=noninteractive - using noninteractive to avoid timezone prompts
+ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     ffmpeg \
@@ -15,8 +17,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Install Jukebox directly from Github
-RUN pip install --no-cache-dir git+https://github.com/openai/jukebox.git
+# Install Jukebox directly from Github with specific flags to avoid dependency issues
+RUN pip install --no-cache-dir --no-deps git+https://github.com/openai/jukebox.git
+RUN pip install --no-cache-dir mutagen>=1.43.0
 
 # Copy the rest of the application
 COPY . .

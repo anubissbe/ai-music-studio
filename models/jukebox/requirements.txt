@@ -5,4 +5,4 @@ torchaudio==2.0.2
 librosa==0.10.1
 numpy==1.24.3
 soundfile==0.12.1
-jukebox
+# Don't install jukebox directly from PyPI - we'll use git install instead
