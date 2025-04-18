@@ -22,19 +22,19 @@ os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 def load_jukebox_model():
     """Load the OpenAI Jukebox model."""
     global model, prior, vqvae
-    
+
     if model is not None:
         return True
-    
+
     try:
         print("Loading Jukebox model...")
-        
+
         # Import jukebox dependencies
         import jukebox
         from jukebox.make_models import make_model
         from jukebox.hparams import Hyperparams
         from jukebox.sample import sample_single_window
-        
+
         # Load 1b_lyrics model
         print("Loading 1b_lyrics model (this may take a while)...")
         model_level = "3"  # Using level 3 which is more detailed
@@ -44,17 +44,17 @@ def load_jukebox_model():
         hps.name = 'samples'
         hps.levels = 3
         hps.hop_fraction = [0.5, 0.5, 0.125]
-        
+
         vqvae, *priors = make_model(hps, device)
         prior = priors[2]  # Level 3 prior
-        
+
         # Set model
         model = {
             'vqvae': vqvae,
             'prior': prior,
             'hps': hps
         }
-        
+
         print("Jukebox model loaded successfully.")
         return True
     except Exception as e:
@@ -64,10 +64,10 @@ def load_jukebox_model():
 def unload_jukebox_model():
     """Unload the Jukebox model to free up GPU memory."""
     global model
-    
+
     if model is None:
         return True
-    
+
     try:
         print("Unloading Jukebox model...")
         model = None
@@ -85,40 +85,40 @@ def unload_jukebox_model():
 def generate_music(content_prompt, style_prompt, has_vocals, output_path):
     """Generate music using the Jukebox model."""
     global model
-    
+
     if model is None:
         load_jukebox_model()
-    
+
     try:
         from jukebox.sample import sample_single_window
         import jukebox.lyricdict as lyricdict
         from jukebox.utils.dist_utils import setup_dist_from_mpi
         from jukebox.utils.torch_utils import empty_cache
-        
+
         # Setup distribution
         rank, local_rank, device = setup_dist_from_mpi()
-        
+
         # Combine prompts
         combined_prompt = content_prompt
         if style_prompt:
             combined_prompt += f" in the style of {style_prompt}"
-        
+
         # Handle vocals
         if not has_vocals:
             combined_prompt += ". Instrumental only, no vocals."
-        
+
         print(f"Generating music with prompt: {combined_prompt}")
-        
+
         vqvae = model['vqvae']
         prior = model['prior']
         hps = model['hps']
-        
+
         # Set lyrics if needed (empty for instrumental)
         lyrics = ""
         if has_vocals:
             lyrics = f"{combined_prompt}"
         metas = [{'artist': 'AI', 'genre': style_prompt or 'unknown', 'total_length': 60, 'offset': 0, 'lyrics': lyrics}]
-        
+
         # Generate codes
         # Start with shorter duration for quicker results, can be increased later
         duration = 30  # 30 seconds
@@ -140,23 +140,23 @@ def generate_music(content_prompt, style_prompt, has_vocals, output_path):
             sample_tokens=duration * hps.sr // hps.hop_fraction[2] // vqvae.sample_length,
             device=device
         )
-        
+
         # Decode to audio
         with torch.no_grad():
             x = vqvae.decode(codes, sample_rate=hps.sr)
-        
+
         # Convert to numpy and save
         audio_numpy = x.squeeze().cpu().numpy()
-        
+
         # Normalize audio
         audio_numpy = audio_numpy / np.abs(audio_numpy).max()
-        
+
         # Save to disk
         sf.write(output_path, audio_numpy, samplerate=SAMPLE_RATE)
-        
+
         # Get duration
         duration = len(audio_numpy) / SAMPLE_RATE
-        
+
         return True, duration
     except Exception as e:
         print(f"Error generating music: {str(e)}")
@@ -165,58 +165,58 @@ def generate_music(content_prompt, style_prompt, has_vocals, output_path):
 def extend_track(source_track_path, output_path, extend_duration, content_prompt, style_prompt, has_vocals):
     """Extend an existing track by generating more music and concatenating."""
     global model
-    
+
     if model is None:
         load_jukebox_model()
-    
+
     try:
         # Load the original track
         original_audio, sr = librosa.load(source_track_path, sr=SAMPLE_RATE)
-        
+
         # Generate new music
         success, new_duration = generate_music(
-            content_prompt + " continue the previous melody and theme", 
-            style_prompt, 
-            has_vocals, 
+            content_prompt + " continue the previous melody and theme",
+            style_prompt,
+            has_vocals,
             output_path + ".temp.wav"
         )
-        
+
         if not success:
             return False, 0
-        
+
         # Load generated extension
         extension_audio, sr = librosa.load(output_path + ".temp.wav", sr=SAMPLE_RATE)
-        
+
         # Apply crossfade for smooth transition (1 second)
         crossfade_length = min(sr, len(original_audio), len(extension_audio))
-        
+
         # Create fade in/out curves
         fade_out = np.linspace(1.0, 0.0, crossfade_length)
         fade_in = np.linspace(0.0, 1.0, crossfade_length)
-        
+
         # Apply fade to the end of original and start of extension
         original_end = original_audio[-crossfade_length:] * fade_out
         extension_start = extension_audio[:crossfade_length] * fade_in
-        
+
         # Mix the crossfade region
         crossfade = original_end + extension_start
-        
+
         # Combine everything
         extended_audio = np.concatenate([
             original_audio[:-crossfade_length],
             crossfade,
             extension_audio[crossfade_length:]
         ])
-        
+
         # Save to disk
         sf.write(output_path, extended_audio, samplerate=SAMPLE_RATE)
-        
+
         # Remove temp file
         os.remove(output_path + ".temp.wav")
-        
+
         # Get the duration of the extended audio
         duration = len(extended_audio) / SAMPLE_RATE
-        
+
         return True, duration
     except Exception as e:
         print(f"Error extending track: {str(e)}")
@@ -225,19 +225,19 @@ def extend_track(source_track_path, output_path, extend_duration, content_prompt
 def remix_track(source_track_path, output_path, content_prompt, style_prompt, has_vocals):
     """Remix an existing track using the style and content prompts."""
     global model
-    
+
     if model is None:
         load_jukebox_model()
-    
+
     try:
         # Load a sample of the original track
         original_audio, sr = librosa.load(source_track_path, sr=SAMPLE_RATE, duration=30)
-        
+
         # Adjust the prompt based on the source track
         remix_prompt = f"Remix of: {content_prompt}"
         if style_prompt:
             remix_prompt += f" in the style of {style_prompt}"
-        
+
         # Generate the remix
         success, duration = generate_music(
             remix_prompt,
@@ -245,7 +245,7 @@ def remix_track(source_track_path, output_path, content_prompt, style_prompt, ha
             has_vocals,
             output_path
         )
-        
+
         return success, duration
     except Exception as e:
         print(f"Error remixing track: {str(e)}")
@@ -255,7 +255,7 @@ def remix_track(source_track_path, output_path, content_prompt, style_prompt, ha
 @app.route('/load', methods=['POST'])
 def load_model():
     success = load_jukebox_model()
-    
+
     if success:
         return jsonify({'success': True, 'message': 'Jukebox model loaded successfully'})
     else:
@@ -264,7 +264,7 @@ def load_model():
 @app.route('/unload', methods=['POST'])
 def unload_model():
     success = unload_jukebox_model()
-    
+
     if success:
         return jsonify({'success': True, 'message': 'Jukebox model unloaded successfully'})
     else:
@@ -279,31 +279,31 @@ def generate():
     output_path = data.get('outputPath')
     is_remix = data.get('isRemix', False)
     source_track_path = data.get('sourceTrackPath')
-    
+
     if not output_path:
         return jsonify({'success': False, 'error': 'Output path is required'}), 400
-    
+
     # If it's a remix and we have a source track
     if is_remix and source_track_path:
         success, duration = remix_track(
-            source_track_path, 
-            output_path, 
-            content_prompt, 
-            style_prompt, 
+            source_track_path,
+            output_path,
+            content_prompt,
+            style_prompt,
             has_vocals
         )
     else:
         # Regular generation
         success, duration = generate_music(
-            content_prompt, 
-            style_prompt, 
-            has_vocals, 
+            content_prompt,
+            style_prompt,
+            has_vocals,
             output_path
         )
-    
+
     if success:
         return jsonify({
-            'success': True, 
+            'success': True,
             'message': 'Music generated successfully',
             'duration': duration
         })
@@ -319,22 +319,22 @@ def extend():
     content_prompt = data.get('contentPrompt', '')
     style_prompt = data.get('stylePrompt', '')
     has_vocals = data.get('hasVocals', True)
-    
+
     if not source_track_path or not output_path:
         return jsonify({'success': False, 'error': 'Source track path and output path are required'}), 400
-    
+
     success, duration = extend_track(
-        source_track_path, 
-        output_path, 
-        extend_duration, 
-        content_prompt, 
-        style_prompt, 
+        source_track_path,
+        output_path,
+        extend_duration,
+        content_prompt,
+        style_prompt,
         has_vocals
     )
-    
+
     if success:
         return jsonify({
-            'success': True, 
+            'success': True,
             'message': 'Track extended successfully',
             'duration': duration
         })

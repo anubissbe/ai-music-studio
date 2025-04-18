@@ -46,6 +46,9 @@ fi
 
 echo "Starting AI Music Generation System..."
 
+# Set environment variable for non-interactive builds
+export DEBIAN_FRONTEND=noninteractive
+
 # Build and start the containers
 echo "Building and starting containers (this may take a while for the first run)..."
 docker-compose up -d
@@ -64,6 +67,7 @@ echo "  AI Music Generation System is now running!"
 echo "==================================================================="
 echo
 echo "  Access the web interface at: http://localhost:8080"
+echo "  Or from another computer at: http://$(hostname -I | awk '{print $1}'):8080"
 echo
 echo "  To stop the system, run: docker-compose down"
 echo

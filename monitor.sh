@@ -71,7 +71,6 @@ echo -e "Uploads Directory: $(du -sh uploads | cut -f1) ($(find uploads -type f 
 # Get system stats
 echo -e "\n${BLUE}System Stats:${NC}"
 echo -e "-------------"
-echo -e "CPU Usage:
 echo -e "CPU Usage: $(top -bn1 | grep "Cpu(s)" | sed "s/.*, *\([0-9.]*\)%* id.*/\1/" | awk '{print 100 - $1}')%"
 echo -e "Memory Usage: $(free -m | awk 'NR==2{printf "%.2f%%", $3*100/$2}')"
 echo -e "Swap Usage: $(free -m | awk 'NR==3{printf "%.2f%%", $3*100/$2}')"
@@ -102,4 +101,5 @@ echo -e "\n${BLUE}============================================================${
 echo -e "${GREEN}Monitor completed. System appears to be operational.${NC}"
 echo -e "${BLUE}============================================================${NC}"
 echo -e "Access the web interface at: ${GREEN}http://localhost:8080${NC}"
+echo -e "Or from another computer at: ${GREEN}http://$(hostname -I | awk '{print $1}'):8080${NC}"
 echo

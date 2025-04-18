@@ -1,27 +1,11 @@
 #!/bin/bash
 
-# Maak de public directory aan als deze nog niet bestaat
-mkdir -p public
+# Genereer SVG logos
+echo '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"><rect width="32" height="32" fill="#3B82F6"/><text x="16" y="20" font-family="Arial" font-size="12" text-anchor="middle" fill="white">M</text></svg>' > public/favicon.svg
+echo '<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192"><rect width="192" height="192" fill="#3B82F6"/><text x="96" y="108" font-family="Arial" font-size="72" text-anchor="middle" fill="white">M</text></svg>' > public/logo192.svg
+echo '<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512"><rect width="512" height="512" fill="#3B82F6"/><text x="256" y="280" font-family="Arial" font-size="180" text-anchor="middle" fill="white">M</text></svg>' > public/logo512.svg
 
-# Download een favicon.ico placeholder
-echo "Downloading placeholder favicon.ico..."
-curl -s -o public/favicon.ico "https://placehold.co/32x32.png" || {
-  echo "Failed to download favicon.ico, creating an empty file instead"
-  touch public/favicon.ico
-}
-
-# Download een logo192.png placeholder
-echo "Downloading placeholder logo192.png..."
-curl -s -o public/logo192.png "https://placehold.co/192x192.png" || {
-  echo "Failed to download logo192.png, creating an empty file instead"
-  touch public/logo192.png
-}
-
-# Download een logo512.png placeholder
-echo "Downloading placeholder logo512.png..."
-curl -s -o public/logo512.png "https://placehold.co/512x512.png" || {
-  echo "Failed to download logo512.png, creating an empty file instead"
-  touch public/logo512.png
-}
-
-echo "Logo placeholders created successfully!"
+# Gebruik SVG's als basis voor favicons
+cp public/favicon.svg public/favicon.ico
+cp public/logo192.svg public/logo192.png
+cp public/logo512.svg public/logo512.png

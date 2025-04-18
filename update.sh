@@ -42,86 +42,32 @@ BACKUP_DIR="backup_$(date +%Y%m%d_%H%M%S)"
 mkdir -p "$BACKUP_DIR"
 cp -r uploads "$BACKUP_DIR/" 2>/dev/null || true
 cp -r output "$BACKUP_DIR/" 2>/dev/null || true
-cp config.yml "$BACKUP_DIR/" 2>/dev/null || true
 echo -e "${GREEN}[SUCCESS] Backup created in ${BACKUP_DIR}${NC}"
 
-# Pull latest changes if it's a git repository
-if [ -d .git ]; then
-  echo -e "${YELLOW}[INFO] Pulling latest changes from git repository...${NC}"
-  git fetch
-
-  LOCAL=$(git rev-parse HEAD)
-  REMOTE=$(git rev-parse @{u})
-
-  if [ "$LOCAL" != "$REMOTE" ]; then
-    echo -e "${YELLOW}[INFO] Updates available. Pulling changes...${NC}"
-    git pull
-
-    # Check for merge conflicts
-    if [ $? -ne 0 ]; then
-      echo -e "${RED}[ERROR] Git pull failed. Please resolve conflicts manually.${NC}"
-      exit 1
-    fi
-
-    echo -e "${GREEN}[SUCCESS] Code updated from repository.${NC}"
-  else
-    echo -e "${GREEN}[INFO] Already up-to-date with the repository.${NC}"
-  fi
-else
-  echo -e "${YELLOW}[INFO] Not a git repository. Skipping code update.${NC}"
-fi
-
-# Rebuild containers
-echo -e "${YELLOW}[INFO] Rebuilding Docker containers...${NC}"
-docker-compose build
-
-# Update model files
-echo -e "${YELLOW}[INFO] Checking for model updates...${NC}"
-for model in musicgen musicgpt jukebox audioldm riffusion bark musiclm mousai stable_audio dance_diffusion; do
-  if [ -f "models/$model/update_model.sh" ]; then
-    echo -e "${YELLOW}[INFO] Updating $model...${NC}"
-    bash "models/$model/update_model.sh"
+# Voeg DEBIAN_FRONTEND=noninteractive toe aan alle Dockerfiles
+echo -e "${YELLOW}[INFO] Updating Dockerfiles with non-interactive mode...${NC}"
+for dockerfile in $(find . -name "Dockerfile"); do
+  if ! grep -q "DEBIAN_FRONTEND=noninteractive" "$dockerfile"; then
+    # Insert after FROM line
+    sed -i '/^FROM/a ENV DEBIAN_FRONTEND=noninteractive' "$dockerfile"
+    echo -e "${GREEN}[SUCCESS] Updated $dockerfile${NC}"
   fi
 done
 
-# Apply database migrations if needed
-if [ -f "backend/migrations/run_migrations.py" ]; then
-  echo -e "${YELLOW}[INFO] Applying database migrations...${NC}"
-  docker-compose run --rm backend python migrations/run_migrations.py
-fi
+# Fix torchaudio versie in requirements.txt bestanden
+echo -e "${YELLOW}[INFO] Fixing torchaudio version in requirements.txt files...${NC}"
+for reqfile in $(find . -name "requirements.txt"); do
+  if grep -q "torchaudio" "$reqfile"; then
+    sed -i 's/torchaudio==.*/torchaudio==2.0.1/' "$reqfile"
+    echo -e "${GREEN}[SUCCESS] Updated torchaudio version in $reqfile${NC}"
+  fi
+done
 
-# Restore user configuration
-if [ -f "$BACKUP_DIR/config.yml" ] && [ -f "config.yml" ]; then
-  echo -e "${YELLOW}[INFO] Merging user configuration...${NC}"
-  python3 -c "
-import yaml, sys
-try:
-    with open('$BACKUP_DIR/config.yml', 'r') as f:
-        user_config = yaml.safe_load(f)
-    with open('config.yml', 'r') as f:
-        new_config = yaml.safe_load(f)
-
-    # Merge configurations while preserving user settings
-    def merge_dicts(user_dict, new_dict):
-        for k, v in new_dict.items():
-            if k in user_dict and isinstance(user_dict[k], dict) and isinstance(v, dict):
-                merge_dicts(user_dict[k], v)
-            elif k not in user_dict:
-                user_dict[k] = v
-        return user_dict
-
-    merged_config = merge_dicts(user_config, new_config)
-
-    with open('config.yml', 'w') as f:
-        yaml.dump(merged_config, f, default_flow_style=False)
-
-    print('\033[0;32m[SUCCESS] Configuration merged successfully.\033[0m')
-except Exception as e:
-    print(f'\033[0;31m[ERROR] Failed to merge configurations: {str(e)}\033[0m')
-  "
-fi
-
-echo -e "${GREEN}[SUCCESS] Update completed successfully.${NC}"
+# Rebuild containers
+echo -e "${YELLOW}[INFO] Rebuilding Docker containers...${NC}"
+# Set environment variable for non-interactive builds
+export DEBIAN_FRONTEND=noninteractive
+docker-compose build
 
 # Restart the system if it was running before
 if [ $RUNNING -eq 1 ]; then
@@ -129,7 +75,7 @@ if [ $RUNNING -eq 1 ]; then
   echo
   if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo -e "${YELLOW}[INFO] Starting AI Music Generation System...${NC}"
-    ./start.sh
+    docker-compose up -d
   else
     echo -e "${YELLOW}[INFO] Remember to start the system manually with ./start.sh${NC}"
   fi

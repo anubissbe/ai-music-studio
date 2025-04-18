@@ -421,12 +421,9 @@ def get_track_audio(track_id):
         'message': 'This endpoint would serve the actual audio file in a real implementation'
     })
 
-# Initialize the app
-@app.before_first_request
-def initialize():
-    init_models()
+# Initializing models at startup instead of using before_first_request decorator
+init_models()
 
 if __name__ == '__main__':
-    # Initialize the models
-    init_models()
+    # Initialize the models at startup
     app.run(host='0.0.0.0', port=5000)
