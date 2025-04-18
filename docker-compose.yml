@@ -243,3 +243,4 @@ volumes:
 networks:
   music-gen-network:
     driver: bridge
+

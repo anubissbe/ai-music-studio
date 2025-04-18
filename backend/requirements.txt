@@ -9,3 +9,5 @@ torch==2.0.1
 numpy==1.24.2
 soundfile==0.12.1
 werkzeug==2.0.3
+pydub
+flask-pymongo
