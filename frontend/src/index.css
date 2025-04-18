@@ -2,11 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Custom scrollbars */
-::-webkit-scrollbar {
-  width: 8px;
+/* optioneel: eigen tweaks */
+body {
+  @apply antialiased text-gray-800;
 }
-::-webkit-scrollbar-thumb {
-  background-color: rgba(100,100,100,0.4);
-  border-radius: 4px;
-}
+
