@@ -1,0 +1,103 @@
+# AI Music Generation Studio - Configuration File
+
+# System Settings
+system:
+  # Set to true to enable debug logging
+  debug: false
+  # Maximum file upload size in MB
+  max_upload_size: 50
+  # Number of tracks to keep in history
+  history_size: 50
+  # Default output audio format (mp3, wav, ogg)
+  output_format: "mp3"
+  # Output audio quality (0-100 for mp3, 0-10 for ogg)
+  output_quality: 96
+  # Default output sample rate
+  sample_rate: 44100
+
+# GPU Settings
+gpu:
+  # GPU memory allocation strategy (dynamic or fixed)
+  memory_allocation: "dynamic"
+  # Percentage of GPU memory to reserve for models when fixed
+  memory_percentage: 90
+  # Enable GPU monitoring
+  enable_monitoring: true
+  # Automatic model unloading when low on memory
+  auto_unload: true
+  # GPU memory threshold for auto unloading (percentage)
+  unload_threshold: 85
+
+# AI Models Settings
+models:
+  # Default model to load on startup (leave empty for none)
+  default_model: "musicgen"
+  # Time in seconds to wait before unloading an unused model
+  unload_timeout: 300
+  # Max number of models to keep loaded simultaneously
+  max_loaded_models: 2
+  # Model loading timeout in seconds
+  loading_timeout: 120
+  
+  # Model-specific settings
+  musicgen:
+    # Model size (melody, medium, small, large)
+    size: "melody"
+    # Default generation duration in seconds
+    duration: 30
+    # Temperature for sampling (higher = more random)
+    temperature: 0.95
+    
+  jukebox:
+    # Model level (1, 2, 3)
+    level: 3
+    # Top k for sampling
+    top_k: 200
+    # Top p for sampling
+    top_p: 0.95
+    # Temperature for sampling
+    temperature: 0.98
+    
+  # Other model settings...
+  
+# Audio Processing Settings
+audio:
+  # Normalize output audio
+  normalize: true
+  # Apply fade in/out (in milliseconds)
+  fade_in: 100
+  fade_out: 500
+  # When extending tracks, crossfade duration in milliseconds
+  crossfade_duration: 1000
+  # Apply loudness normalization to match commercial music
+  loudness_normalization: true
+  # Target loudness in LUFS
+  target_loudness: -14
+  
+# Web Interface Settings
+web:
+  # Enable dark mode by default
+  dark_mode: true
+  # Auto-play generated tracks
+  auto_play: true
+  # Show advanced options
+  show_advanced: false
+  # Number of tracks to show in history
+  display_history_count: 10
+  # Enable audio visualization
+  enable_visualization: true
+  # Enable keyboard shortcuts
+  enable_shortcuts: true
+  
+# Security Settings
+security:
+  # Require authentication
+  require_auth: false
+  # Username for basic auth
+  username: "admin"
+  # Password for basic auth (change this!)
+  password: "musicai"
+  # Allow remote access (not just localhost)
+  allow_remote: false
+  # Rate limiting for generation requests (per minute)
+  rate_limit: 10

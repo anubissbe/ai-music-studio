@@ -1,0 +1,222 @@
+version: '3.8'
+
+services:
+  frontend:
+    build: ./frontend
+    ports:
+      - "8080:80"
+    volumes:
+      - ./uploads:/app/uploads
+    depends_on:
+      - backend
+    networks:
+      - music-gen-network
+
+  backend:
+    build: ./backend
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./uploads:/app/uploads
+      - ./output:/app/output
+      - ./models:/app/models
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017/music_generation
+    depends_on:
+      - mongodb
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    networks:
+      - music-gen-network
+
+  mongodb:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb-data:/data/db
+    networks:
+      - music-gen-network
+
+  # AI Model Containers
+  musicgen:
+    build: ./models/musicgen
+    ports:
+      - "5001:5000"
+    volumes:
+      - ./models/musicgen:/app
+      - ./output:/app/output
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    networks:
+      - music-gen-network
+
+  musicgpt:
+    build: ./models/musicgpt
+    ports:
+      - "5002:5000"
+    volumes:
+      - ./models/musicgpt:/app
+      - ./output:/app/output
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    networks:
+      - music-gen-network
+
+  jukebox:
+    build: ./models/jukebox
+    ports:
+      - "5003:5000"
+    volumes:
+      - ./models/jukebox:/app
+      - ./output:/app/output
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    networks:
+      - music-gen-network
+
+  audioldm:
+    build: ./models/audioldm
+    ports:
+      - "5004:5000"
+    volumes:
+      - ./models/audioldm:/app
+      - ./output:/app/output
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    networks:
+      - music-gen-network
+
+  riffusion:
+    build: ./models/riffusion
+    ports:
+      - "5005:5000"
+    volumes:
+      - ./models/riffusion:/app
+      - ./output:/app/output
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    networks:
+      - music-gen-network
+
+  bark:
+    build: ./models/bark
+    ports:
+      - "5006:5000"
+    volumes:
+      - ./models/bark:/app
+      - ./output:/app/output
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    networks:
+      - music-gen-network
+
+  musiclm:
+    build: ./models/musiclm
+    ports:
+      - "5007:5000"
+    volumes:
+      - ./models/musiclm:/app
+      - ./output:/app/output
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    networks:
+      - music-gen-network
+
+  mousai:
+    build: ./models/mousai
+    ports:
+      - "5008:5000"
+    volumes:
+      - ./models/mousai:/app
+      - ./output:/app/output
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    networks:
+      - music-gen-network
+
+  stable_audio:
+    build: ./models/stable_audio
+    ports:
+      - "5009:5000"
+    volumes:
+      - ./models/stable_audio:/app
+      - ./output:/app/output
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    networks:
+      - music-gen-network
+      
+  dance_diffusion:
+    build: ./models/dance_diffusion
+    ports:
+      - "5010:5000"
+    volumes:
+      - ./models/dance_diffusion:/app
+      - ./output:/app/output
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    networks:
+      - music-gen-network
+
+volumes:
+  mongodb-data:
+
+networks:
+  music-gen-network:
+    driver: bridge
