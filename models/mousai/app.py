@@ -1,13 +1,14 @@
-import os
-import time
-import torch
-import torchaudio
-import numpy as np
-from flask import Flask, request, jsonify
-from flask_cors import CORS
-from pydub import AudioSegment
-import librosa
 import soundfile as sf
+import librosa
+from pydub import AudioSegment
+from flask_cors import CORS
+from flask import Flask, request, jsonify
+import numpy as np
+import torchaudio
+import torch
+import time
+import os
+MODEL = None
 
 app = Flask(__name__)
 CORS(app)
@@ -19,6 +20,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # Constants
 OUTPUT_FOLDER = '/app/output'
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
+
 
 def load_musicgen_model():
     """Load the MusicGen model from Meta AI."""
@@ -37,6 +39,7 @@ def load_musicgen_model():
     except Exception as e:
         print(f"Error loading MusicGen model: {str(e)}")
         return False
+
 
 def unload_musicgen_model():
     """Unload the MusicGen model to free up GPU memory."""
@@ -58,6 +61,7 @@ def unload_musicgen_model():
     except Exception as e:
         print(f"Error unloading MusicGen model: {str(e)}")
         return False
+
 
 def generate_music(content_prompt, style_prompt, has_vocals, output_path):
     """Generate music using the MusicGen model."""
@@ -95,7 +99,14 @@ def generate_music(content_prompt, style_prompt, has_vocals, output_path):
         print(f"Error generating music: {str(e)}")
         return False, 0
 
-def extend_track(source_track_path, output_path, extend_duration, content_prompt, style_prompt, has_vocals):
+
+def extend_track(
+    source_track_path,
+    output_path,
+    extend_duration,
+    content_prompt,
+    style_prompt,
+     has_vocals):
     """Extend an existing track by generating more music and concatenating."""
     global model
 
@@ -139,7 +150,13 @@ def extend_track(source_track_path, output_path, extend_duration, content_prompt
         print(f"Error extending track: {str(e)}")
         return False, 0
 
-def remix_track(source_track_path, output_path, content_prompt, style_prompt, has_vocals):
+
+def remix_track(
+    source_track_path,
+    output_path,
+    content_prompt,
+    style_prompt,
+     has_vocals):
     """Remix an existing track using the style and content prompts."""
     global model
 
@@ -148,7 +165,8 @@ def remix_track(source_track_path, output_path, content_prompt, style_prompt, ha
 
     try:
         # Load a small sample of the original track to get its style
-        original_audio, sr = librosa.load(source_track_path, sr=32000, duration=10)
+        original_audio, sr = librosa.load(
+    source_track_path, sr=32000, duration=10)
 
         # Combine prompts for the remix
         combined_prompt = f"Remix of: {content_prompt}"
@@ -179,7 +197,15 @@ def remix_track(source_track_path, output_path, content_prompt, style_prompt, ha
         return False, 0
 
 # Routes
+
+
 @app.route('/load', methods=['POST'])
+    if MODEL is not None:
+        MODEL = None
+        torch.cuda.empty_cache()
+    if MODEL is not None:
+        MODEL = None
+        torch.cuda.empty_cache()
 def load_model():
     success = load_musicgen_model()
 
@@ -189,7 +215,10 @@ def load_model():
         return jsonify({'success': False, 'error': 'Failed to load MusicGen model'}), 500
 
 @app.route('/unload', methods=['POST'])
-def unload_model():
+    def unload_model():
+        if MODEL is not None:
+MODEL = None
+        torch.cuda.empty_cache()
     success = unload_musicgen_model()
 
     if success:
@@ -213,26 +242,26 @@ def generate():
     # If it's a remix and we have a source track
     if is_remix and source_track_path:
         success, duration = remix_track(
-            source_track_path,
-            output_path,
-            content_prompt,
-            style_prompt,
-            has_vocals
+        source_track_path,
+        output_path,
+        content_prompt,
+        style_prompt,
+        has_vocals
         )
     else:
         # Regular generation
         success, duration = generate_music(
-            content_prompt,
-            style_prompt,
-            has_vocals,
-            output_path
+        content_prompt,
+        style_prompt,
+        has_vocals,
+        output_path
         )
 
     if success:
         return jsonify({
-            'success': True,
-            'message': 'Music generated successfully',
-            'duration': duration
+        'success': True,
+        'message': 'Music generated successfully',
+        'duration': duration
         })
     else:
         return jsonify({'success': False, 'error': 'Failed to generate music'}), 500
@@ -261,9 +290,9 @@ def extend():
 
     if success:
         return jsonify({
-            'success': True,
-            'message': 'Track extended successfully',
-            'duration': duration
+        'success': True,
+        'message': 'Track extended successfully',
+        'duration': duration
         })
     else:
         return jsonify({'success': False, 'error': 'Failed to extend track'}), 500

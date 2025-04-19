@@ -78,7 +78,7 @@ def unload_jukebox_model():
         import gc
         gc.collect()
         with torch.cuda.device(device):
-            torch.cuda.empty_cache()
+        torch.cuda.empty_cache()
         print("Jukebox model unloaded successfully.")
         return True
     except Exception as e:
@@ -105,11 +105,11 @@ def generate_music(content_prompt, style_prompt, has_vocals, output_path):
         # Combine prompts
         combined_prompt = content_prompt
         if style_prompt:
-            combined_prompt += f" in the style of {style_prompt}"
+        combined_prompt += f" in the style of {style_prompt}"
 
         # Handle vocals
         if not has_vocals:
-            combined_prompt += ". Instrumental only, no vocals."
+        combined_prompt += ". Instrumental only, no vocals."
 
         print(f"Generating music with prompt: {combined_prompt}")
 
@@ -120,7 +120,7 @@ def generate_music(content_prompt, style_prompt, has_vocals, output_path):
         # Set lyrics if needed (empty for instrumental)
         lyrics = ""
         if has_vocals:
-            lyrics = f"{combined_prompt}"
+        lyrics = f"{combined_prompt}"
         metas = [{'artist': 'AI', 'genre': style_prompt or 'unknown',
         'total_length': 60, 'offset': 0, 'lyrics': lyrics}]
 
@@ -151,7 +151,7 @@ def generate_music(content_prompt, style_prompt, has_vocals, output_path):
 
         # Decode to audio
         with torch.no_grad():
-            x = vqvae.decode(codes, sample_rate=hps.sr)
+        x = vqvae.decode(codes, sample_rate=hps.sr)
 
         # Convert to numpy and save
         audio_numpy = x.squeeze().cpu().numpy()
@@ -197,7 +197,7 @@ def extend_track(
         )
 
         if not success:
-            return False, 0
+        return False, 0
 
         # Load generated extension
         extension_audio, sr = librosa.load(
@@ -259,7 +259,7 @@ def remix_track(
         # Adjust the prompt based on the source track
         remix_prompt = f"Remix of: {content_prompt}"
         if style_prompt:
-            remix_prompt += f" in the style of {style_prompt}"
+        remix_prompt += f" in the style of {style_prompt}"
 
         # Generate the remix
         success, duration = generate_music(
@@ -279,10 +279,10 @@ def remix_track(
 
 @app.route('/load', methods=['POST'])
     if MODEL is not None:
-        MODEL = None
+MODEL = None
         torch.cuda.empty_cache()
     if MODEL is not None:
-        MODEL = None
+MODEL = None
         torch.cuda.empty_cache()
 def load_model():
     success = load_jukebox_model()
@@ -294,7 +294,7 @@ def load_model():
 
 @app.route('/unload', methods=['POST'])
     def unload_model():
-        if MODEL is not None:
+    if MODEL is not None:
 MODEL = None
         torch.cuda.empty_cache()
     success = unload_jukebox_model()
