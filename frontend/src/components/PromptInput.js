@@ -1,24 +1,28 @@
-import React, { useState } from 'react';
+import React from 'react'
 
-export default function PromptInput({ onGenerate, disabled }) {
-  const [text, setText] = useState('');
+export default function PromptInput({ prompt, onChange, onGenerate, disabled }) {
   return (
-    <div>
+    <section className="bg-white rounded-lg shadow p-6">
+      <h2 className="text-xl font-semibold mb-3">Voer je prompt in</h2>
       <textarea
-        value={text}
-        onChange={e => setText(e.target.value)}
-        className="w-full h-32 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400
-          dark:bg-gray-700 dark:border-gray-600"
-        placeholder="Typ je prompt..."
-        disabled={disabled}
+        className="w-full h-32 p-3 border rounded focus:outline-none focus:ring"
+        placeholder="Typ je prompt…"
+        value={prompt}
+        onChange={e => onChange(e.target.value)}
       />
       <button
-        onClick={() => onGenerate(text)}
-        disabled={disabled || !text.trim()}
-        className="mt-4 px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition disabled:opacity-50"
+        onClick={onGenerate}
+        disabled={disabled}
+        className={
+          `mt-4 px-5 py-2 rounded text-white transition ` +
+          (disabled
+            ? 'bg-gray-400 cursor-not-allowed'
+            : 'bg-indigo-600 hover:bg-indigo-700')
+        }
       >
-        Genereer
+        {disabled ? 'Even wachten…' : 'Genereer'}
       </button>
-    </div>
-  );
+    </section>
+  )
 }
+
