@@ -1,42 +1,39 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -euo pipefail
 
-# Set color codes
-GREEN='\033[0;32m'
-YELLOW='\033[0;33m'
-NC='\033[0m' # No Color
+# Loop over each service’s app.py
+for f in models/*/app.py; do
+  echo "→ fixing $f …"
 
-echo -e "${YELLOW}AI Music Studio - Model Dependencies Fix${NC}"
-echo "========================================"
+  # 1) Remove any "if MODEL is not None:" plus its single-line body
+  sed -i '/^[[:space:]]*if MODEL is not None:/{
+    N
+    d
+  }' "$f"
 
-# Voeg pydub toe en fix Flask/Werkzeug versies voor alle modelcontainers
-for model in models/*/requirements.txt; do
-  echo -e "${GREEN}Updating $model...${NC}"
-  
-  # Voeg pydub toe als het ontbreekt
-  if ! grep -q "pydub" "$model"; then
-    echo "pydub==0.25.1" >> "$model"
-    echo "  Added pydub==0.25.1"
-  fi
-  
-  # Fix Flask versie
-  if grep -q "flask==" "$model"; then
-    sed -i 's/flask==.*/flask==2.0.1/' "$model"
-    echo "  Updated to flask==2.0.1"
-  else
-    echo "flask==2.0.1" >> "$model"
-    echo "  Added flask==2.0.1"
-  fi
-  
-  # Fix Werkzeug versie
-  if grep -q "werkzeug==" "$model"; then
-    sed -i 's/werkzeug==.*/werkzeug==2.0.3/' "$model"
-    echo "  Updated to werkzeug==2.0.3"
-  else
-    echo "werkzeug==2.0.3" >> "$model"
-    echo "  Added werkzeug==2.0.3"
-  fi
+  # 2) Remove stray "global MODEL"
+  sed -i '/^[[:space:]]*global MODEL[[:space:]]*$/d' "$f"
+
+  # 3) Remove orphaned empty_cache calls
+  sed -i '/torch\.cuda\.empty_cache()/d' "$f"
+
+  # 4) Remove tiny `if style_prompt:` blocks
+  sed -i '/^[[:space:]]*if style_prompt:/{
+    N
+    d
+  }' "$f"
+
+  # 5) For any empty `with ...:` (no body), insert a pass
+  sed -i '/^[[:space:]]*with .*:\s*$/{
+    N
+    /^[[:space:]]*with .*:\n[[:space:]]*$/{
+      s/\(with .*:\)\n[[:space:]]*$/\1\n    pass/
+    }
+  }' "$f"
+
+  # 6) Reformat with Black (ensure black is in your PATH)
+  black --quiet "$f"
 done
 
-echo -e "\n${GREEN}All model requirements.txt files updated!${NC}"
-echo -e "Now rebuild the containers with: docker-compose build"
-echo -e "Then restart with: docker-compose up -d"
+echo "✓ All app.py under models/ have been cleaned up."
+

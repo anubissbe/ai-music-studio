@@ -1,43 +1,54 @@
-#!/usr/bin/env python3
-# fix_blocks.py
+#!/usr/bin/env bash
+set -euo pipefail
 
-import os
-import re
+for file in models/*/app.py; do
+  echo "⟳ Patching $file …"
 
-BLOCK_START = re.compile(r'^(\s*)(if|elif|else|for|while|with|def|class)\b.*:\s*(#.*)?$')
+  # 1) Verwijder álle oude @app.route("/load" t/m de bijbehorende def
+  sed -i '/^@app\.route.*\/load/,/^def /d' "$file"
 
-def fix_file(path):
-    with open(path, 'r') as f:
-        lines = f.readlines()
+  # 2) Verwijder álle oude @app.route("/unload" t/m de bijbehorende def
+  sed -i '/^@app\.route.*\/unload/,/^def /d' "$file"
 
-    out = []
-    i = 0
-    while i < len(lines):
-        line = lines[i]
-        out.append(line)
+  # 3) Verwijder rogue shell‑achtige regels
+  sed -i '/^function /d; /_impl()/d; /^if MODEL is not None:/d' "$file"
 
-        m = BLOCK_START.match(line)
-        if m and i + 1 < len(lines):
-            base_indent = len(m.group(1))
-            next_line = lines[i+1]
-            # skip blank/comment lines
-            if next_line.strip() and not next_line.lstrip().startswith('#'):
-                cur_indent = len(next_line) - len(next_line.lstrip(' '))
-                if cur_indent <= base_indent:
-                    stripped = next_line.lstrip(' ')
-                    new_indent = ' ' * (base_indent + 4)
-                    out.append(new_indent + stripped)
-                    i += 2
-                    continue
-        i += 1
+  # 4) Voeg onderaan, vlak vóór de "if __name__ == '__main__':" je nieuwe handlers toe
+  awk '
+    BEGIN { injected=0 }
+    /^if __name__ == .*__main__.*$/ && injected==0 {
+      print ""
+      print "# --- automatisch toegevoegd: load/unload endpoints ---"
+      print ""
+      print "@app.route(\"/load\", methods=[\"POST\"])"
+      print "def load_model_endpoint():"
+      print "    \"\"\"Laad het model in GPU geheugen.\"\"\""
+      print "    success = load_musicgen_model()"
+      print "    if success:"
+      print "        return jsonify({\"success\": True, \"message\": \"Model loaded successfully\"})"
+      print "    return jsonify({\"success\": False, \"error\": \"Failed to load model\"}), 500"
+      print ""
+      print "@app.route(\"/unload\", methods=[\"POST\"])"
+      print "def unload_model_endpoint():"
+      print "    \"\"\"Verwijder het model uit GPU geheugen.\"\"\""
+      print "    global model"
+      print "    if model is None:"
+      print "        return jsonify({\"success\": False, \"error\": \"No model loaded\"}), 400"
+      print "    model = None"
+      print "    import gc; gc.collect()"
+      print "    if torch.cuda.is_available():"
+      print "        torch.cuda.empty_cache()"
+      print "    return jsonify({\"success\": True, \"message\": \"Model unloaded successfully\"})"
+      injected=1
+    }
+    { print }
+  ' "$file" > "$file.tmp" && mv "$file.tmp" "$file"
 
-    with open(path, 'w') as f:
-        f.writelines(out)
-    print(f"  ✓ {path}")
+  echo "✅ $file gepatcht."
+done
 
-if __name__ == '__main__':
-    for root, _, files in os.walk('.'):
-        for fn in files:
-            if fn == 'app.py':
-                fix_file(os.path.join(root, fn))
+echo
+echo "🎉 Klaar met patchen! Voer nu:"
+echo "   black models/*/app.py"
+echo "   docker-compose build && docker-compose up"
 
