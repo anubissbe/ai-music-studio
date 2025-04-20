@@ -5,7 +5,7 @@ from flask_cors import CORS
 import torch
 
 # Import model-specific load and generate implementations
-from app_impl import load_model_impl, generate_impl
+from app_impl import load_model_impl, generate_impl, remix_impl, extend_impl
 
 OUTPUT_FOLDER = "/app/output"
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
@@ -15,20 +15,23 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 app = Flask(__name__)
 CORS(app)
 
-
 @app.route("/generate", methods=["POST"])
 def generate_route():
+    """Genereer muziek op basis van de opgegeven prompt"""
     data = request.json
     prompt = data.get("prompt", "")
     output_path = data.get("outputPath")
     if not output_path:
         return jsonify(success=False, error="outputPath required"), 400
-    duration = generate_impl(prompt, output_path)
-    return jsonify(success=True, duration=duration)
-
+    
+    success, duration = generate_impl(prompt, output_path)
+    if success:
+        return jsonify(success=True, duration=duration)
+    return jsonify(success=False, error="Generation failed"), 500
 
 @app.route("/load", methods=["POST"])
 def load_route():
+    """Laad het model in het geheugen"""
     global model
     success = load_model_impl()
     if success:
@@ -36,9 +39,9 @@ def load_route():
     else:
         return jsonify(success=False, error="Failed to load model"), 500
 
-
 @app.route("/unload", methods=["POST"])
 def unload_route():
+    """Unload het model en maak GPU-geheugen vrij"""
     global model
     if model is None:
         return jsonify(success=False, error="No model loaded"), 400
@@ -48,6 +51,56 @@ def unload_route():
         torch.cuda.empty_cache()
     return jsonify(success=True, message="Model unloaded successfully")
 
+@app.route("/generate/extend", methods=["POST"])
+def extend_route():
+    """Verleng een bestaande track"""
+    data = request.json
+    source_track_path = data.get("sourceTrackPath")
+    output_path = data.get("outputPath")
+    extend_duration = data.get("extendDuration", 30)
+    content_prompt = data.get("contentPrompt", "")
+    style_prompt = data.get("stylePrompt", "")
+    has_vocals = data.get("hasVocals", True)
+
+    if not source_track_path or not output_path:
+        return jsonify({'success': False, 'error': 'Source track path and output path are required'}), 400
+
+    success, duration = extend_impl(
+        source_track_path, 
+        output_path, 
+        extend_duration, 
+        content_prompt, 
+        style_prompt, 
+        has_vocals
+    )
+    if success:
+        return jsonify({'success': True, 'duration': duration})
+    return jsonify({'success': False, 'error': 'Extension failed'}), 500
+
+@app.route("/generate/remix", methods=["POST"])
+def remix_route():
+    """Maak een remix van een bestaande track"""
+    data = request.json
+    source_track_path = data.get("sourceTrackPath")
+    output_path = data.get("outputPath")
+    content_prompt = data.get("contentPrompt", "")
+    style_prompt = data.get("stylePrompt", "")
+    has_vocals = data.get("hasVocals", True)
+
+    if not source_track_path or not output_path:
+        return jsonify({'success': False, 'error': 'Source track path and output path are required'}), 400
+
+    success, duration = remix_impl(
+        source_track_path,
+        output_path,
+        content_prompt,
+        style_prompt,
+        has_vocals
+    )
+    if success:
+        return jsonify({'success': True, 'duration': duration})
+    return jsonify({'success': False, 'error': 'Remix failed'}), 500
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
+

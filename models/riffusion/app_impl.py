@@ -1,301 +1,146 @@
 import soundfile as sf
 import librosa
-from pydub import AudioSegment
-from flask_cors import CORS
-from flask import Flask, request, jsonify
-import numpy as np
-import torchaudio
+from flask import jsonify
 import torch
-import time
+from riffusion.riffusion_pipeline import RiffusionPipeline
+from riffusion.datatypes import InferenceInput
+from PIL import Image
 import os
-MODEL = None
 
-app = Flask(__name__)
-CORS(app)
-
-# Global variable to hold the model
+# Globale variabelen
 model = None
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
-# Constants
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 OUTPUT_FOLDER = '/app/output'
-os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
-
-def load_musicgen_model():
-    """Load the MusicGen model from Meta AI."""
+# Functie om het model te laden
+def load_model_impl():
     global model
-
     if model is not None:
         return True
 
     try:
-        print("Loading MusicGen model...")
-        from audiocraft.models import MusicGen
-        model = MusicGen.get_pretrained('melody')
-        model.set_generation_params(duration=30)  # Default to 30-second clips
-        print("MusicGen model loaded successfully.")
+        # Het laden van het model via de RiffusionPipeline
+        model = RiffusionPipeline.load_checkpoint(
+            checkpoint="riffusion/riffusion-model-v1",  # Zorg ervoor dat dit het juiste checkpoint is
+            device=device,
+        )
+        print("Model loaded successfully.")
         return True
     except Exception as e:
-        print(f"Error loading MusicGen model: {str(e)}")
+        print(f"Error loading model: {str(e)}")
         return False
 
-
-def unload_musicgen_model():
-    """Unload the MusicGen model to free up GPU memory."""
+# Functie om muziek te genereren
+def generate_impl(prompt, output_path):
     global model
-
     if model is None:
-        return True
+        load_model_impl()
 
     try:
-        print("Unloading MusicGen model...")
-        model = None
-        # Force garbage collection to free up GPU memory
-        import gc
-        gc.collect()
-        with torch.cuda.device(device):
-            torch.cuda.empty_cache()
-        print("MusicGen model unloaded successfully.")
-        return True
-    except Exception as e:
-        print(f"Error unloading MusicGen model: {str(e)}")
-        return False
+        # Voorbeeld van het creëren van een InferenceInput-object, pas dit aan afhankelijk van je behoeften
+        inference_input = InferenceInput(
+            prompt=prompt,
+            alpha=0.5,  # voorbeeldwaarde, afhankelijk van de pipelineconfiguratie
+            start=None,  # Dit moet worden ingesteld op je specifieke behoeften
+            end=None,  # Dit moet ook worden ingesteld
+            num_inference_steps=50,
+            guidance_scale=7.5,
+        )
 
+        # Gebruik de pipeline om audio te genereren
+        # Hier kunnen specifieke aanpassingen nodig zijn op basis van de prompt en instellingen
+        image = model.riffuse(inference_input, init_image=Image.new('RGB', (512, 512)))
 
-def generate_music(content_prompt, style_prompt, has_vocals, output_path):
-    """Generate music using the MusicGen model."""
-    global model
-
-    if model is None:
-        load_musicgen_model()
-
-    try:
-        # Combine prompts
-        combined_prompt = content_prompt
-        if style_prompt:
-            combined_prompt += f" in the style of {style_prompt}"
-
-        if not has_vocals:
-            combined_prompt += ". Instrumental only, no vocals."
-
-        print(f"Generating music with prompt: {combined_prompt}")
-
-        # Generate the audio
-        model.set_generation_params(duration=30)  # 30 seconds of audio
-        audio_output = model.generate([combined_prompt])
-
-        # Convert to numpy array
-        audio_numpy = audio_output.cpu().numpy()[0, 0]  # Take the first sample
-
-        # Save to disk
+        # Omzetten naar numpy array en opslaan
+        audio_numpy = torch.tensor(image).cpu().numpy()  # Dit kan variëren afhankelijk van hoe de output wordt gegenereerd
         sf.write(output_path, audio_numpy, samplerate=32000)
 
-        # Get the duration of the generated audio
+        # Bereken de duur van de gegenereerde audio
         duration = librosa.get_duration(y=audio_numpy, sr=32000)
-
-        return True, duration
+        return duration
     except Exception as e:
         print(f"Error generating music: {str(e)}")
-        return False, 0
+        return 0
 
-
-def extend_track(
-    source_track_path,
-    output_path,
-    extend_duration,
-    content_prompt,
-    style_prompt,
-     has_vocals):
-    """Extend an existing track by generating more music and concatenating."""
+# Functie om een track uit te breiden
+def extend_impl(source_track_path, output_path, extend_duration, content_prompt, style_prompt, has_vocals):
     global model
-
     if model is None:
-        load_musicgen_model()
+        load_model_impl()
 
     try:
-        # Load the original track
+        # Laad het originele nummer
         original_audio, sr = librosa.load(source_track_path, sr=32000)
 
-        # Combine prompts
+        # Combineer de prompts voor het genereren van de muziek
         combined_prompt = content_prompt
         if style_prompt:
             combined_prompt += f" in the style of {style_prompt}"
-
         if not has_vocals:
             combined_prompt += ". Instrumental only, no vocals."
 
-        combined_prompt += " Continuation of the previous section, maintain the same style and theme."
+        # Genereer de aanvullende audio
+        inference_input = InferenceInput(prompt=combined_prompt, alpha=0.5, start=None, end=None, num_inference_steps=50, guidance_scale=7.5)
+        image = model.riffuse(inference_input, init_image=Image.new('RGB', (512, 512)))  # Aangepast voor de inference pipeline
 
-        print(f"Extending track with prompt: {combined_prompt}")
-
-        # Generate the additional audio
-        model.set_generation_params(duration=extend_duration)
-        audio_output = model.generate([combined_prompt])
-
-        # Convert to numpy array
-        extension_audio = audio_output.cpu().numpy()[0, 0]
-
-        # Concatenate the original and extension
-        extended_audio = np.concatenate([original_audio, extension_audio])
+        # Convert to numpy array and save to file
+        extended_audio = torch.tensor(image).cpu().numpy()  # Assuming output is in a format convertible to numpy
+        extended_audio = np.concatenate([original_audio, extended_audio])
 
         # Save to disk
         sf.write(output_path, extended_audio, samplerate=32000)
 
         # Get the duration of the extended audio
         duration = librosa.get_duration(y=extended_audio, sr=32000)
-
-        return True, duration
+        return duration
     except Exception as e:
         print(f"Error extending track: {str(e)}")
-        return False, 0
+        return 0
 
-
-def remix_track(
-    source_track_path,
-    output_path,
-    content_prompt,
-    style_prompt,
-     has_vocals):
-    """Remix an existing track using the style and content prompts."""
+# Functie om een remix van een track te maken
+def remix_impl(source_track_path, output_path, content_prompt, style_prompt, has_vocals):
     global model
-
     if model is None:
-        load_musicgen_model()
+        load_model_impl()
 
     try:
-        # Load a small sample of the original track to get its style
-        original_audio, sr = librosa.load(
-    source_track_path, sr=32000, duration=10)
+        # Laad een klein gedeelte van de originele track om de stijl te extraheren
+        original_audio, sr = librosa.load(source_track_path, sr=32000, duration=10)
 
-        # Combine prompts for the remix
+        # Combineer de prompts voor de remix
         combined_prompt = f"Remix of: {content_prompt}"
         if style_prompt:
             combined_prompt += f" in the style of {style_prompt}"
-
         if not has_vocals:
             combined_prompt += ". Instrumental only, no vocals."
 
-        print(f"Remixing track with prompt: {combined_prompt}")
+        # Genereer de remix audio
+        inference_input = InferenceInput(prompt=combined_prompt, alpha=0.5, start=None, end=None, num_inference_steps=50, guidance_scale=7.5)
+        image = model.riffuse(inference_input, init_image=Image.new('RGB', (512, 512)))  # Aangepast voor de inference pipeline
 
-        # Generate the remix audio
-        model.set_generation_params(duration=30)
-        audio_output = model.generate([combined_prompt])
-
-        # Convert to numpy array
-        remix_audio = audio_output.cpu().numpy()[0, 0]
-
-        # Save to disk
+        # Convert to numpy array and save to file
+        remix_audio = torch.tensor(image).cpu().numpy()
         sf.write(output_path, remix_audio, samplerate=32000)
 
         # Get the duration of the remix
         duration = librosa.get_duration(y=remix_audio, sr=32000)
-
-        return True, duration
+        return duration
     except Exception as e:
         print(f"Error remixing track: {str(e)}")
-        return False, 0
+        return 0
 
-# Routes
+# Functie om het model te ontladen (GPU-geheugen vrij te maken)
+def unload_model_impl():
+    global model
+    if model is None:
+        return True
 
+    try:
+        model = None
+        torch.cuda.empty_cache()  # Verwijder GPU-geheugen
+        print("Model unloaded successfully.")
+        return True
+    except Exception as e:
+        print(f"Error unloading model: {str(e)}")
+        return False
 
-@app.route('/load', methods=['POST'])
-    if MODEL is not None:
-MODEL = None
-        torch.cuda.empty_cache()
-    if MODEL is not None:
-MODEL = None
-        torch.cuda.empty_cache()
-def load_model():
-    success = load_musicgen_model()
-
-    if success:
-        return jsonify({'success': True, 'message': 'MusicGen model loaded successfully'})
-    else:
-        return jsonify({'success': False, 'error': 'Failed to load MusicGen model'}), 500
-
-@app.route('/unload', methods=['POST'])
-    def unload_model():
-    if MODEL is not None:
-MODEL = None
-        torch.cuda.empty_cache()
-    success = unload_musicgen_model()
-
-    if success:
-        return jsonify({'success': True, 'message': 'MusicGen model unloaded successfully'})
-    else:
-        return jsonify({'success': False, 'error': 'Failed to unload MusicGen model'}), 500
-
-@app.route('/generate', methods=['POST'])
-def generate():
-    data = request.json
-    content_prompt = data.get('contentPrompt', '')
-    style_prompt = data.get('stylePrompt', '')
-    has_vocals = data.get('hasVocals', True)
-    output_path = data.get('outputPath')
-    is_remix = data.get('isRemix', False)
-    source_track_path = data.get('sourceTrackPath')
-
-    if not output_path:
-        return jsonify({'success': False, 'error': 'Output path is required'}), 400
-
-    # If it's a remix and we have a source track
-    if is_remix and source_track_path:
-        success, duration = remix_track(
-        source_track_path,
-        output_path,
-        content_prompt,
-        style_prompt,
-        has_vocals
-        )
-    else:
-        # Regular generation
-        success, duration = generate_music(
-        content_prompt,
-        style_prompt,
-        has_vocals,
-        output_path
-        )
-
-    if success:
-        return jsonify({
-        'success': True,
-        'message': 'Music generated successfully',
-        'duration': duration
-        })
-    else:
-        return jsonify({'success': False, 'error': 'Failed to generate music'}), 500
-
-@app.route('/generate/extend', methods=['POST'])
-def extend():
-    data = request.json
-    source_track_path = data.get('sourceTrackPath')
-    output_path = data.get('outputPath')
-    extend_duration = data.get('extendDuration', 30)
-    content_prompt = data.get('contentPrompt', '')
-    style_prompt = data.get('stylePrompt', '')
-    has_vocals = data.get('hasVocals', True)
-
-    if not source_track_path or not output_path:
-        return jsonify({'success': False, 'error': 'Source track path and output path are required'}), 400
-
-    success, duration = extend_track(
-        source_track_path,
-        output_path,
-        extend_duration,
-        content_prompt,
-        style_prompt,
-        has_vocals
-    )
-
-    if success:
-        return jsonify({
-        'success': True,
-        'message': 'Track extended successfully',
-        'duration': duration
-        })
-    else:
-        return jsonify({'success': False, 'error': 'Failed to extend track'}), 500
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)

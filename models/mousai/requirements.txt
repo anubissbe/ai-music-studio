@@ -1,11 +1,8 @@
 flask==2.0.1
 flask-cors==4.0.0
-requests==2.31.0
-torchaudio==2.0.1
+audiocraft==1.0.0    # Meta AI MusicGen
 librosa==0.10.1
-transformers==4.32.0
-audiocraft==1.0.0
-pydub==0.25.1
 numpy==1.24.3
 soundfile==0.12.1
 werkzeug==2.0.3
+

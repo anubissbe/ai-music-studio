@@ -9,3 +9,6 @@ pydub==0.25.1
 numpy==1.24.3
 soundfile==0.12.1
 werkzeug==2.0.3
+huggingface_hub==0.15.1
+accelerate==0.20.3
+git+https://github.com/riffusion/riffusion-hobby.git#egg=riffusion

@@ -5,7 +5,7 @@ from flask_cors import CORS
 import torch
 
 # Import model-specific load and generate implementations
-from app_impl import load_model_impl, generate_impl
+from app_impl import load_model_impl, generate_impl, remix_impl, extend_impl
 
 OUTPUT_FOLDER = "/app/output"
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
@@ -14,7 +14,6 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 app = Flask(__name__)
 CORS(app)
-
 
 @app.route("/generate", methods=["POST"])
 def generate_route():
@@ -49,5 +48,54 @@ def unload_route():
     return jsonify(success=True, message="Model unloaded successfully")
 
 
+@app.route("/remix", methods=["POST"])
+def remix_route():
+    data = request.json
+    content_prompt = data.get("contentPrompt", "")
+    style_prompt = data.get("stylePrompt", "")
+    has_vocals = data.get("hasVocals", True)
+    output_path = data.get("outputPath")
+    source_track_path = data.get("sourceTrackPath")
+
+    if not output_path:
+        return jsonify({'success': False, 'error': 'Output path is required'}), 400
+
+    success, duration = remix_impl(source_track_path, output_path, content_prompt, style_prompt, has_vocals)
+
+    if success:
+        return jsonify({
+            'success': True,
+            'message': 'Remix generated successfully',
+            'duration': duration
+        })
+    else:
+        return jsonify({'success': False, 'error': 'Failed to generate remix'}), 500
+
+
+@app.route("/extend", methods=["POST"])
+def extend_route():
+    data = request.json
+    source_track_path = data.get("sourceTrackPath")
+    output_path = data.get("outputPath")
+    extend_duration = data.get("extendDuration", 30)
+    content_prompt = data.get("contentPrompt", "")
+    style_prompt = data.get("stylePrompt", "")
+    has_vocals = data.get("hasVocals", True)
+
+    if not source_track_path or not output_path:
+        return jsonify({'success': False, 'error': 'Source track path and output path are required'}), 400
+
+    success, duration = extend_impl(source_track_path, output_path, extend_duration, content_prompt, style_prompt, has_vocals)
+
+    if success:
+        return jsonify({
+            'success': True,
+            'message': 'Track extended successfully',
+            'duration': duration
+        })
+    else:
+        return jsonify({'success': False, 'error': 'Failed to extend track'}), 500
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
+

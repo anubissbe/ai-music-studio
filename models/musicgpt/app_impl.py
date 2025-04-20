@@ -55,6 +55,7 @@ def unload_musicgen_model():
         import gc
         gc.collect()
         with torch.cuda.device(device):
+        with torch.cuda.device(device):
             torch.cuda.empty_cache()
         print("MusicGen model unloaded successfully.")
         return True
@@ -74,8 +75,10 @@ def generate_music(content_prompt, style_prompt, has_vocals, output_path):
         # Combine prompts
         combined_prompt = content_prompt
         if style_prompt:
+        if style_prompt:
             combined_prompt += f" in the style of {style_prompt}"
 
+        if not has_vocals:
         if not has_vocals:
             combined_prompt += ". Instrumental only, no vocals."
 
@@ -120,8 +123,10 @@ def extend_track(
         # Combine prompts
         combined_prompt = content_prompt
         if style_prompt:
+        if style_prompt:
             combined_prompt += f" in the style of {style_prompt}"
 
+        if not has_vocals:
         if not has_vocals:
             combined_prompt += ". Instrumental only, no vocals."
 
@@ -171,8 +176,10 @@ def remix_track(
         # Combine prompts for the remix
         combined_prompt = f"Remix of: {content_prompt}"
         if style_prompt:
+        if style_prompt:
             combined_prompt += f" in the style of {style_prompt}"
 
+        if not has_vocals:
         if not has_vocals:
             combined_prompt += ". Instrumental only, no vocals."
 
@@ -200,12 +207,13 @@ def remix_track(
 
 
 @app.route('/load', methods=['POST'])
+@app.route('/load', methods=['POST'])
+if MODEL is not None:
+    MODEL = None
+    torch.cuda.empty_cache()
     if MODEL is not None:
-MODEL = None
-        torch.cuda.empty_cache()
-    if MODEL is not None:
-MODEL = None
-        torch.cuda.empty_cache()
+    MODEL = None
+    torch.cuda.empty_cache()
 def load_model():
     success = load_musicgen_model()
 
@@ -215,10 +223,10 @@ def load_model():
         return jsonify({'success': False, 'error': 'Failed to load MusicGen model'}), 500
 
 @app.route('/unload', methods=['POST'])
-    def unload_model():
+def unload_model():
     if MODEL is not None:
-MODEL = None
-        torch.cuda.empty_cache()
+    MODEL = None
+    torch.cuda.empty_cache()
     success = unload_musicgen_model()
 
     if success:

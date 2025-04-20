@@ -1,28 +1,29 @@
-FROM pytorch/pytorch:2.0.1-cuda11.7-cudnn8-runtime
+# models/bark/Dockerfile
+FROM pytorch/pytorch:2.1.0-cuda11.8-cudnn8-runtime
 
 WORKDIR /app
 
 # Voorkom interactieve prompts
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Install system dependencies
+# System dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     ffmpeg \
     libsndfile1 \
     git \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies
+# Python dependencies
 COPY requirements.txt .
+# Force upgrade torch for bark compatibility
+RUN pip install --no-cache-dir torch==2.1.0+cu118 torchaudio==2.1.0 --extra-index-url https://download.pytorch.org/whl/cu118
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the rest of the application
+# Copy application code
 COPY . .
 
-# Expose the port the app runs on
 EXPOSE 5000
-
-# Command to run the application
 CMD ["python", "app.py"]
+

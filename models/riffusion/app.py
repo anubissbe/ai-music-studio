@@ -5,7 +5,7 @@ from flask_cors import CORS
 import torch
 
 # Import model-specific load and generate implementations
-from app_impl import load_model_impl, generate_impl
+from app_impl import load_model_impl, generate_impl, extend_impl, remix_impl
 
 OUTPUT_FOLDER = "/app/output"
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
@@ -23,8 +23,11 @@ def generate_route():
     output_path = data.get("outputPath")
     if not output_path:
         return jsonify(success=False, error="outputPath required"), 400
-    duration = generate_impl(prompt, output_path)
-    return jsonify(success=True, duration=duration)
+    success, duration = generate_impl(prompt, output_path)
+    if success:
+        return jsonify(success=True, duration=duration)
+    else:
+        return jsonify(success=False, error="Generation failed"), 500
 
 
 @app.route("/load", methods=["POST"])
@@ -49,5 +52,49 @@ def unload_route():
     return jsonify(success=True, message="Model unloaded successfully")
 
 
+@app.route("/extend", methods=["POST"])
+def extend_route():
+    data = request.json
+    source_track_path = data.get("sourceTrackPath")
+    output_path = data.get("outputPath")
+    extend_duration = data.get("extendDuration", 30)
+    content_prompt = data.get("contentPrompt", "")
+    style_prompt = data.get("stylePrompt", "")
+    has_vocals = data.get("hasVocals", True)
+
+    if not source_track_path or not output_path:
+        return jsonify(success=False, error="Source track path and output path are required"), 400
+
+    success, duration = extend_impl(
+        source_track_path, output_path, extend_duration, content_prompt, style_prompt, has_vocals
+    )
+
+    if success:
+        return jsonify(success=True, duration=duration)
+    else:
+        return jsonify(success=False, error="Failed to extend track"), 500
+
+
+@app.route("/remix", methods=["POST"])
+def remix_route():
+    data = request.json
+    source_track_path = data.get("sourceTrackPath")
+    output_path = data.get("outputPath")
+    content_prompt = data.get("contentPrompt", "")
+    style_prompt = data.get("stylePrompt", "")
+    has_vocals = data.get("hasVocals", True)
+
+    if not source_track_path or not output_path:
+        return jsonify(success=False, error="Source track path and output path are required"), 400
+
+    success, duration = remix_impl(source_track_path, output_path, content_prompt, style_prompt, has_vocals)
+
+    if success:
+        return jsonify(success=True, duration=duration)
+    else:
+        return jsonify(success=False, error="Failed to remix track"), 500
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
+

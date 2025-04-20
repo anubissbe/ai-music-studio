@@ -2,52 +2,78 @@ import os
 import gc
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import torch
 
-# Import model-specific load and generate implementations
-from app_impl import load_model_impl, generate_impl
-
-OUTPUT_FOLDER = "/app/output"
-os.makedirs(OUTPUT_FOLDER, exist_ok=True)
-model = None
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+from app_impl import (
+    load_model_impl,
+    unload_model_impl,
+    generate_impl,
+    extend_impl,
+    remix_impl,
+)
 
 app = Flask(__name__)
 CORS(app)
 
+OUTPUT_FOLDER = '/app/output'
+if not os.path.isdir(OUTPUT_FOLDER):
+    os.makedirs(OUTPUT_FOLDER)
 
-@app.route("/generate", methods=["POST"])
-def generate_route():
-    data = request.json
-    prompt = data.get("prompt", "")
-    output_path = data.get("outputPath")
-    if not output_path:
-        return jsonify(success=False, error="outputPath required"), 400
-    duration = generate_impl(prompt, output_path)
-    return jsonify(success=True, duration=duration)
-
-
-@app.route("/load", methods=["POST"])
+@app.route('/load', methods=['POST'])
 def load_route():
-    global model
-    success = load_model_impl()
-    if success:
-        return jsonify(success=True, message="Model loaded successfully")
-    else:
-        return jsonify(success=False, error="Failed to load model"), 500
+    if load_model_impl():
+        return jsonify(success=True, message='Mousai model loaded')
+    return jsonify(success=False, error='Failed to load Mousai model'), 500
 
-
-@app.route("/unload", methods=["POST"])
+@app.route('/unload', methods=['POST'])
 def unload_route():
-    global model
-    if model is None:
-        return jsonify(success=False, error="No model loaded"), 400
-    model = None
-    gc.collect()
-    if torch.cuda.is_available():
-        torch.cuda.empty_cache()
-    return jsonify(success=True, message="Model unloaded successfully")
+    if unload_model_impl():
+        return jsonify(success=True, message='Mousai model unloaded')
+    return jsonify(success=False, error='Failed to unload Mousai model'), 500
 
+@app.route('/generate', methods=['POST'])
+def generate_route():
+    data = request.json or {}
+    content = data.get('contentPrompt', '')
+    style = data.get('stylePrompt', '')
+    vocals = data.get('hasVocals', True)
+    output = data.get('outputPath')
+    if not output:
+        return jsonify(success=False, error='outputPath required'), 400
+    ok, duration = generate_impl(content, style, vocals, output)
+    if ok:
+        return jsonify(success=True, duration=duration)
+    return jsonify(success=False, error='Generation failed'), 500
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+@app.route('/generate/extend', methods=['POST'])
+def extend_route():
+    data = request.json or {}
+    source = data.get('sourceTrackPath')
+    output = data.get('outputPath')
+    dur = data.get('extendDuration', 30.0)
+    content = data.get('contentPrompt', '')
+    style = data.get('stylePrompt', '')
+    vocals = data.get('hasVocals', True)
+    if not source or not output:
+        return jsonify(success=False, error='sourceTrackPath and outputPath required'), 400
+    ok, duration = extend_impl(source, output, dur, content, style, vocals)
+    if ok:
+        return jsonify(success=True, duration=duration)
+    return jsonify(success=False, error='Extension failed'), 500
+
+@app.route('/generate/remix', methods=['POST'])
+def remix_route():
+    data = request.json or {}
+    source = data.get('sourceTrackPath')
+    output = data.get('outputPath')
+    content = data.get('contentPrompt', '')
+    style = data.get('stylePrompt', '')
+    vocals = data.get('hasVocals', True)
+    if not source or not output:
+        return jsonify(success=False, error='sourceTrackPath and outputPath required'), 400
+    ok, duration = remix_impl(source, output, content, style, vocals)
+    if ok:
+        return jsonify(success=True, duration=duration)
+    return jsonify(success=False, error='Remix failed'), 500
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000)
