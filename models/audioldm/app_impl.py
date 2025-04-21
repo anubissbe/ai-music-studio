@@ -6,6 +6,7 @@ import soundfile as sf
 import librosa
 
 from diffusers import AudioLDMPipeline
+from pydub import AudioSegment
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 OUTPUT_FOLDER = "/app/output"
@@ -17,9 +18,9 @@ model = None
 def load_model_impl():
     """Laad de AudioLDM-pipeline vanuit HuggingFace Diffusers."""
     global model
-    if model is not None:
-        return True
     try:
+        if model is not None:
+            return True
         print("Loading AudioLDMPipeline…")
         model = AudioLDMPipeline.from_pretrained(
             "cvssp/audioldm-m-full",
@@ -36,9 +37,9 @@ def load_model_impl():
 def unload_model_impl():
     """Verwijder het model en maak GPU‑geheugen vrij."""
     global model
-    if model is None:
-        return True
     try:
+        if model is None:
+            return True
         model = None
         gc.collect()
         if torch.cuda.is_available():
@@ -51,18 +52,26 @@ def unload_model_impl():
 
 
 def generate_impl(prompt: str, output_path: str) -> float:
-    """
-    Genereer audio voor een gegeven prompt en sla op.
-    Returns duur in seconden, of 0 bij failure.
-    """
+    """Genereer audio voor een gegeven prompt en sla op."""
     global model
-    if model is None:
-        if not load_model_impl():
-            return 0.0
     try:
+        # Maak absoluut pad
+        if not os.path.isabs(output_path):
+            full_output_path = os.path.join(OUTPUT_FOLDER, output_path)
+        else:
+            full_output_path = output_path
+        
+        print(f"Will save to: {full_output_path}")
+        
+        # Zorg dat de output directory bestaat
+        os.makedirs(OUTPUT_FOLDER, exist_ok=True)
+        if model is None:
+            if not load_model_impl():
+                return 0.0
         out = model(prompt, num_inference_steps=10, audio_length_in_s=30.0)
         audio = out.audios[0].cpu().numpy()
         sf.write(output_path, audio, samplerate=16000)
+        convert_to_mp3(output_path, output_path.replace(".wav", ".mp3"))
         duration = librosa.get_duration(y=audio, sr=16000)
         print(f"Saved {output_path}, duration={duration:.2f}s")
         return duration
@@ -71,29 +80,29 @@ def generate_impl(prompt: str, output_path: str) -> float:
         return 0.0
 
 
-def extend_impl(
-    source_path: str,
-    output_path: str,
-    extend_duration: float,
-    prompt: str,
-) -> float:
-    """
-    Extend een bestaand audiobestand door een nieuw segment te genereren.
-    """
+def extend_impl(source_path: str, output_path: str, extend_duration: float, prompt: str) -> float:
+    """Voeg extra audio toe aan een bestaand bestand."""
     global model
-    if model is None:
-        if not load_model_impl():
-            return 0.0
     try:
+        # Maak absoluut pad
+        if not os.path.isabs(output_path):
+            full_output_path = os.path.join(OUTPUT_FOLDER, output_path)
+        else:
+            full_output_path = output_path
+        
+        print(f"Will save to: {full_output_path}")
+        
+        # Zorg dat de output directory bestaat
+        os.makedirs(OUTPUT_FOLDER, exist_ok=True)
+        if model is None:
+            if not load_model_impl():
+                return 0.0
         original, sr = librosa.load(source_path, sr=16000)
-        out = model(
-            prompt,
-            num_inference_steps=10,
-            audio_length_in_s=extend_duration,
-        )
+        out = model(prompt, num_inference_steps=10, audio_length_in_s=extend_duration)
         extension = out.audios[0].cpu().numpy()
         combined = np.concatenate([original, extension])
         sf.write(output_path, combined, samplerate=16000)
+        convert_to_mp3(output_path, output_path.replace(".wav", ".mp3"))
         duration = librosa.get_duration(y=combined, sr=16000)
         print(f"Extended saved to {output_path}, duration={duration:.2f}s")
         return duration
@@ -102,27 +111,42 @@ def extend_impl(
         return 0.0
 
 
-def remix_impl(
-    source_path: str,
-    output_path: str,
-    prompt: str,
-) -> float:
-    """
-    Maak een remix door een nieuw segment te genereren gebaseerd op prompt.
-    """
+def remix_impl(source_path: str, output_path: str, prompt: str) -> float:
+    """Maak een remix gebaseerd op de prompt."""
     global model
-    if model is None:
-        if not load_model_impl():
-            return 0.0
     try:
+        # Maak absoluut pad
+        if not os.path.isabs(output_path):
+            full_output_path = os.path.join(OUTPUT_FOLDER, output_path)
+        else:
+            full_output_path = output_path
+        
+        print(f"Will save to: {full_output_path}")
+        
+        # Zorg dat de output directory bestaat
+        os.makedirs(OUTPUT_FOLDER, exist_ok=True)
+        if model is None:
+            if not load_model_impl():
+                return 0.0
         remix_prompt = f"Remix of: {prompt}"
         out = model(remix_prompt, num_inference_steps=10, audio_length_in_s=30.0)
         remix = out.audios[0].cpu().numpy()
         sf.write(output_path, remix, samplerate=16000)
+        convert_to_mp3(output_path, output_path.replace(".wav", ".mp3"))
         duration = librosa.get_duration(y=remix, sr=16000)
         print(f"Remix saved to {output_path}, duration={duration:.2f}s")
         return duration
     except Exception as e:
         print(f"Error during remix: {e}")
         return 0.0
+
+
+def convert_to_mp3(wav_path, mp3_path):
+    """Converteer een WAV-bestand naar MP3-formaat."""
+    try:
+        sound = AudioSegment.from_wav(wav_path)
+        sound.export(mp3_path, format="mp3")
+        print(f"Converted {wav_path} to {mp3_path}")
+    except Exception as e:
+        print(f"❌ Fout bij conversie naar mp3: {e}")
 

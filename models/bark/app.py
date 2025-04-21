@@ -50,7 +50,7 @@ def generate_route():
         ok, duration = generate_impl(content, style, vocals, output)
 
     if ok:
-        return jsonify(success=True, duration=duration)
+        return jsonify(success=True, duration=duration, outputPath=output_path)
     return jsonify(success=False, error='Generation failed'), 500
 
 @app.route('/generate/extend', methods=['POST'])
@@ -68,7 +68,7 @@ def extend_route():
 
     ok, duration = extend_impl(source, output, dur, content, style, vocals)
     if ok:
-        return jsonify(success=True, duration=duration)
+        return jsonify(success=True, duration=duration, outputPath=output_path)
     return jsonify(success=False, error='Extension failed'), 500
 
 @app.route('/generate/remix', methods=['POST'])
@@ -85,7 +85,7 @@ def remix_route():
 
     ok, duration = remix_impl(source, output, content, style, vocals)
     if ok:
-        return jsonify(success=True, duration=duration)
+        return jsonify(success=True, duration=duration, outputPath=output_path)
     return jsonify(success=False, error='Remix failed'), 500
 
 if __name__ == '__main__':

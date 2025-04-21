@@ -26,7 +26,7 @@ def generate_route():
     
     success, duration = generate_impl(prompt, output_path)
     if success:
-        return jsonify(success=True, duration=duration)
+        return jsonify(success=True, duration=duration, outputPath=output_path)
     return jsonify(success=False, error="Generation failed"), 500
 
 @app.route("/load", methods=["POST"])

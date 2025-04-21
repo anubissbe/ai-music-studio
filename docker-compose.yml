@@ -20,8 +20,7 @@ services:
       - "5000:5000"
     volumes:
       - ./uploads:/app/uploads
-      - ./output:/app/output
-      - ./models:/app/models
+      - ./output:/opt/ai-music-studio/output  # Belangrijk: dit pad moet overeenkomen met de Flask app
     environment:
       - MONGO_URI=mongodb://mongodb:27017/music_generation
       - DEBIAN_FRONTEND=noninteractive
@@ -46,14 +45,14 @@ services:
     networks:
       - music-gen-network
 
-  # AI Model Containers
+  # AI Model Containers - volume mapping aangepast voor alle modellen
   musicgen:
     build: ./models/musicgen
     ports:
       - "5001:5000"
     volumes:
       - ./models/musicgen:/app
-      - ./output:/app/output
+      - ./output:/app/output  # Dit moet overeenkomen met OUTPUT_FOLDER in app_impl.py:rw
     environment:
       - DEBIAN_FRONTEND=noninteractive
     deploy:
@@ -72,7 +71,7 @@ services:
       - "5002:5000"
     volumes:
       - ./models/musicgpt:/app
-      - ./output:/app/output
+      - ./output:/app/output:rw
     environment:
       - DEBIAN_FRONTEND=noninteractive
     deploy:
@@ -91,7 +90,7 @@ services:
       - "5003:5000"
     volumes:
       - ./models/jukebox:/app
-      - ./output:/app/output
+      - ./output:/app/output:rw
     environment:
       - DEBIAN_FRONTEND=noninteractive
     deploy:
@@ -110,7 +109,7 @@ services:
       - "5004:5000"
     volumes:
       - ./models/audioldm:/app
-      - ./output:/app/output
+      - ./output:/app/output:rw
     environment:
       - DEBIAN_FRONTEND=noninteractive
     deploy:
@@ -129,7 +128,7 @@ services:
       - "5005:5000"
     volumes:
       - ./models/riffusion:/app
-      - ./output:/app/output
+      - ./output:/app/output:rw
     environment:
       - DEBIAN_FRONTEND=noninteractive
     deploy:
@@ -148,7 +147,7 @@ services:
       - "5006:5000"
     volumes:
       - ./models/bark:/app
-      - ./output:/app/output
+      - ./output:/app/output:rw
     environment:
       - DEBIAN_FRONTEND=noninteractive
     deploy:
@@ -167,7 +166,7 @@ services:
       - "5007:5000"
     volumes:
       - ./models/musiclm:/app
-      - ./output:/app/output
+      - ./output:/app/output:rw
     environment:
       - DEBIAN_FRONTEND=noninteractive
     deploy:
@@ -186,7 +185,7 @@ services:
       - "5008:5000"
     volumes:
       - ./models/mousai:/app
-      - ./output:/app/output
+      - ./output:/app/output:rw
     environment:
       - DEBIAN_FRONTEND=noninteractive
     deploy:
@@ -205,7 +204,7 @@ services:
       - "5009:5000"
     volumes:
       - ./models/stable_audio:/app
-      - ./output:/app/output
+      - ./output:/app/output:rw
     environment:
       - DEBIAN_FRONTEND=noninteractive
     deploy:
@@ -224,7 +223,7 @@ services:
       - "5010:5000"
     volumes:
       - ./models/dance_diffusion:/app
-      - ./output:/app/output
+      - ./output:/app/output:rw
     environment:
       - DEBIAN_FRONTEND=noninteractive
     deploy:
@@ -243,4 +242,3 @@ volumes:
 networks:
   music-gen-network:
     driver: bridge
-

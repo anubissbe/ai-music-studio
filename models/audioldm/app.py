@@ -42,7 +42,7 @@ def generate_route():
         return jsonify(success=False, error="outputPath required"), 400
     duration = generate_impl(prompt, output_path)
     if duration > 0:
-        return jsonify(success=True, duration=duration)
+        return jsonify(success=True, duration=duration, outputPath=output_path)
     return jsonify(success=False, error="Generation failed"), 500
 
 
@@ -57,7 +57,7 @@ def extend_route():
         return jsonify(success=False, error="sourcePath and outputPath required"), 400
     duration = extend_impl(source, output, dur, prompt)
     if duration > 0:
-        return jsonify(success=True, duration=duration)
+        return jsonify(success=True, duration=duration, outputPath=output_path)
     return jsonify(success=False, error="Extension failed"), 500
 
 
@@ -71,7 +71,7 @@ def remix_route():
         return jsonify(success=False, error="sourcePath and outputPath required"), 400
     duration = remix_impl(source, output, prompt)
     if duration > 0:
-        return jsonify(success=True, duration=duration)
+        return jsonify(success=True, duration=duration, outputPath=output_path)
     return jsonify(success=False, error="Remix failed"), 500
 
 

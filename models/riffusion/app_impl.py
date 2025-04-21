@@ -1,27 +1,28 @@
 import soundfile as sf
 import librosa
-from flask import jsonify
+import numpy as np
 import torch
 from riffusion.riffusion_pipeline import RiffusionPipeline
 from riffusion.datatypes import InferenceInput
 from PIL import Image
 import os
+import gc
+from pydub import AudioSegment
 
-# Globale variabelen
 model = None
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 OUTPUT_FOLDER = '/app/output'
+os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
-# Functie om het model te laden
+
 def load_model_impl():
     global model
-    if model is not None:
-        return True
-
     try:
-        # Het laden van het model via de RiffusionPipeline
+        if model is not None:
+            return True
+        print("Loading Riffusion model...")
         model = RiffusionPipeline.load_checkpoint(
-            checkpoint="riffusion/riffusion-model-v1",  # Zorg ervoor dat dit het juiste checkpoint is
+            checkpoint="riffusion/riffusion-model-v1",
             device=device,
         )
         print("Model loaded successfully.")
@@ -30,117 +31,154 @@ def load_model_impl():
         print(f"Error loading model: {str(e)}")
         return False
 
-# Functie om muziek te genereren
+
+def unload_model_impl():
+    global model
+    try:
+        if model is None:
+            return True
+        model = None
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+        print("Model unloaded successfully.")
+        return True
+    except Exception as e:
+        print(f"Error unloading model: {str(e)}")
+        return False
+
+
 def generate_impl(prompt, output_path):
     global model
-    if model is None:
-        load_model_impl()
-
     try:
-        # Voorbeeld van het creëren van een InferenceInput-object, pas dit aan afhankelijk van je behoeften
+        # Maak absoluut pad
+        if not os.path.isabs(output_path):
+            full_output_path = os.path.join(OUTPUT_FOLDER, output_path)
+        else:
+            full_output_path = output_path
+        
+        print(f"Will save to: {full_output_path}")
+        
+        # Zorg dat de output directory bestaat
+        os.makedirs(OUTPUT_FOLDER, exist_ok=True)
+        if model is None and not load_model_impl():
+            return 0
+
         inference_input = InferenceInput(
             prompt=prompt,
-            alpha=0.5,  # voorbeeldwaarde, afhankelijk van de pipelineconfiguratie
-            start=None,  # Dit moet worden ingesteld op je specifieke behoeften
-            end=None,  # Dit moet ook worden ingesteld
+            alpha=0.5,
+            start=None,
+            end=None,
             num_inference_steps=50,
             guidance_scale=7.5,
         )
 
-        # Gebruik de pipeline om audio te genereren
-        # Hier kunnen specifieke aanpassingen nodig zijn op basis van de prompt en instellingen
         image = model.riffuse(inference_input, init_image=Image.new('RGB', (512, 512)))
+        audio_numpy = torch.tensor(image).cpu().numpy()
 
-        # Omzetten naar numpy array en opslaan
-        audio_numpy = torch.tensor(image).cpu().numpy()  # Dit kan variëren afhankelijk van hoe de output wordt gegenereerd
         sf.write(output_path, audio_numpy, samplerate=32000)
-
-        # Bereken de duur van de gegenereerde audio
+        convert_to_mp3(output_path, output_path.replace(".wav", ".mp3"))
         duration = librosa.get_duration(y=audio_numpy, sr=32000)
         return duration
     except Exception as e:
         print(f"Error generating music: {str(e)}")
         return 0
 
-# Functie om een track uit te breiden
+
 def extend_impl(source_track_path, output_path, extend_duration, content_prompt, style_prompt, has_vocals):
     global model
-    if model is None:
-        load_model_impl()
-
     try:
-        # Laad het originele nummer
-        original_audio, sr = librosa.load(source_track_path, sr=32000)
+        # Maak absoluut pad
+        if not os.path.isabs(output_path):
+            full_output_path = os.path.join(OUTPUT_FOLDER, output_path)
+        else:
+            full_output_path = output_path
+        
+        print(f"Will save to: {full_output_path}")
+        
+        # Zorg dat de output directory bestaat
+        os.makedirs(OUTPUT_FOLDER, exist_ok=True)
+        if model is None and not load_model_impl():
+            return 0
 
-        # Combineer de prompts voor het genereren van de muziek
+        original_audio, sr = librosa.load(source_track_path, sr=32000)
         combined_prompt = content_prompt
         if style_prompt:
             combined_prompt += f" in the style of {style_prompt}"
         if not has_vocals:
             combined_prompt += ". Instrumental only, no vocals."
 
-        # Genereer de aanvullende audio
-        inference_input = InferenceInput(prompt=combined_prompt, alpha=0.5, start=None, end=None, num_inference_steps=50, guidance_scale=7.5)
-        image = model.riffuse(inference_input, init_image=Image.new('RGB', (512, 512)))  # Aangepast voor de inference pipeline
+        inference_input = InferenceInput(
+            prompt=combined_prompt,
+            alpha=0.5,
+            start=None,
+            end=None,
+            num_inference_steps=50,
+            guidance_scale=7.5,
+        )
 
-        # Convert to numpy array and save to file
-        extended_audio = torch.tensor(image).cpu().numpy()  # Assuming output is in a format convertible to numpy
-        extended_audio = np.concatenate([original_audio, extended_audio])
+        image = model.riffuse(inference_input, init_image=Image.new('RGB', (512, 512)))
+        extension = torch.tensor(image).cpu().numpy()
+        extended_audio = np.concatenate([original_audio, extension])
 
-        # Save to disk
         sf.write(output_path, extended_audio, samplerate=32000)
-
-        # Get the duration of the extended audio
+        convert_to_mp3(output_path, output_path.replace(".wav", ".mp3"))
         duration = librosa.get_duration(y=extended_audio, sr=32000)
         return duration
     except Exception as e:
         print(f"Error extending track: {str(e)}")
         return 0
 
-# Functie om een remix van een track te maken
+
 def remix_impl(source_track_path, output_path, content_prompt, style_prompt, has_vocals):
     global model
-    if model is None:
-        load_model_impl()
-
     try:
-        # Laad een klein gedeelte van de originele track om de stijl te extraheren
-        original_audio, sr = librosa.load(source_track_path, sr=32000, duration=10)
+        # Maak absoluut pad
+        if not os.path.isabs(output_path):
+            full_output_path = os.path.join(OUTPUT_FOLDER, output_path)
+        else:
+            full_output_path = output_path
+        
+        print(f"Will save to: {full_output_path}")
+        
+        # Zorg dat de output directory bestaat
+        os.makedirs(OUTPUT_FOLDER, exist_ok=True)
+        if model is None and not load_model_impl():
+            return 0
 
-        # Combineer de prompts voor de remix
+        original_audio, sr = librosa.load(source_track_path, sr=32000, duration=10)
         combined_prompt = f"Remix of: {content_prompt}"
         if style_prompt:
             combined_prompt += f" in the style of {style_prompt}"
         if not has_vocals:
             combined_prompt += ". Instrumental only, no vocals."
 
-        # Genereer de remix audio
-        inference_input = InferenceInput(prompt=combined_prompt, alpha=0.5, start=None, end=None, num_inference_steps=50, guidance_scale=7.5)
-        image = model.riffuse(inference_input, init_image=Image.new('RGB', (512, 512)))  # Aangepast voor de inference pipeline
+        inference_input = InferenceInput(
+            prompt=combined_prompt,
+            alpha=0.5,
+            start=None,
+            end=None,
+            num_inference_steps=50,
+            guidance_scale=7.5,
+        )
 
-        # Convert to numpy array and save to file
+        image = model.riffuse(inference_input, init_image=Image.new('RGB', (512, 512)))
         remix_audio = torch.tensor(image).cpu().numpy()
-        sf.write(output_path, remix_audio, samplerate=32000)
 
-        # Get the duration of the remix
+        sf.write(output_path, remix_audio, samplerate=32000)
+        convert_to_mp3(output_path, output_path.replace(".wav", ".mp3"))
         duration = librosa.get_duration(y=remix_audio, sr=32000)
         return duration
     except Exception as e:
         print(f"Error remixing track: {str(e)}")
         return 0
 
-# Functie om het model te ontladen (GPU-geheugen vrij te maken)
-def unload_model_impl():
-    global model
-    if model is None:
-        return True
 
+def convert_to_mp3(wav_path, mp3_path):
     try:
-        model = None
-        torch.cuda.empty_cache()  # Verwijder GPU-geheugen
-        print("Model unloaded successfully.")
-        return True
+        sound = AudioSegment.from_wav(wav_path)
+        sound.export(mp3_path, format="mp3")
+        print(f"Converted {wav_path} to {mp3_path}")
     except Exception as e:
-        print(f"Error unloading model: {str(e)}")
-        return False
+        print(f"❌ Fout bij conversie naar mp3: {e}")
 

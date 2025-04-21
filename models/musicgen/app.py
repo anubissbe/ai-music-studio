@@ -23,7 +23,7 @@ def generate_route():
     if not output_path:
         return jsonify(success=False, error="outputPath required"), 400
     duration = generate_impl(prompt, output_path)
-    return jsonify(success=True, duration=duration)
+    return jsonify(success=True, duration=duration, outputPath=output_path)
 
 
 @app.route("/load", methods=["POST"])
@@ -38,14 +38,23 @@ def load_route():
 
 @app.route("/unload", methods=["POST"])
 def unload_route():
-    global model
-    if model is None:
-        return jsonify(success=False, error="No model loaded"), 400
-    model = None
-    gc.collect()
-    if torch.cuda.is_available():
-        torch.cuda.empty_cache()
-    return jsonify(success=True, message="Model unloaded successfully")
+    """Een vereenvoudigde unload functie die niet afhankelijk is van app_impl."""
+    try:
+        # Probeer globale variabelen op te ruimen
+        global model
+        model = None
+        
+        # Ruim torch geheugen op
+        import gc
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+            
+        print("Unload routine completed")
+        return jsonify(success=True, message="Model unloaded successfully")
+    except Exception as e:
+        print(f"Error in unload route: {str(e)}")
+        return jsonify(success=False, error=f"Error: {str(e)}"), 500
 
 
 @app.route("/remix", methods=["POST"])

@@ -25,7 +25,7 @@ def generate_route():
         return jsonify(success=False, error="outputPath required"), 400
     success, duration = generate_impl(prompt, output_path)
     if success:
-        return jsonify(success=True, duration=duration)
+        return jsonify(success=True, duration=duration, outputPath=output_path)
     else:
         return jsonify(success=False, error="Generation failed"), 500
 
@@ -70,7 +70,7 @@ def extend_route():
     )
 
     if success:
-        return jsonify(success=True, duration=duration)
+        return jsonify(success=True, duration=duration, outputPath=output_path)
     else:
         return jsonify(success=False, error="Failed to extend track"), 500
 
@@ -90,7 +90,7 @@ def remix_route():
     success, duration = remix_impl(source_track_path, output_path, content_prompt, style_prompt, has_vocals)
 
     if success:
-        return jsonify(success=True, duration=duration)
+        return jsonify(success=True, duration=duration, outputPath=output_path)
     else:
         return jsonify(success=False, error="Failed to remix track"), 500
 
