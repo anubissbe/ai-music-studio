@@ -1,0 +1,306 @@
+# Dependabot configuration for automated dependency updates
+# See: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+
+version: 2
+updates:
+  # NPM dependencies (JavaScript/TypeScript)
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "04:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "{{GITHUB_USERNAME}}"
+    assignees:
+      - "{{GITHUB_USERNAME}}"
+    commit-message:
+      prefix: "deps"
+      prefix-development: "deps-dev"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "automated"
+    milestone: null
+    allow:
+      - dependency-type: "direct"
+      - dependency-type: "indirect"
+    ignore:
+      # Ignore major version updates for critical dependencies
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "vue"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "angular"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "next"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "nuxt"
+        update-types: ["version-update:semver-major"]
+    rebase-strategy: "auto"
+
+  # Frontend directory (if separate)
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "04:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "{{GITHUB_USERNAME}}"
+    assignees:
+      - "{{GITHUB_USERNAME}}"
+    commit-message:
+      prefix: "deps(frontend)"
+      prefix-development: "deps-dev(frontend)"
+    labels:
+      - "dependencies"
+      - "frontend"
+      - "automated"
+
+  # Backend directory (if separate)
+  - package-ecosystem: "npm"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "04:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "{{GITHUB_USERNAME}}"
+    assignees:
+      - "{{GITHUB_USERNAME}}"
+    commit-message:
+      prefix: "deps(backend)"
+      prefix-development: "deps-dev(backend)"
+    labels:
+      - "dependencies"
+      - "backend"
+      - "automated"
+
+  # Python dependencies (pip)
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "tuesday"
+      time: "04:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "{{GITHUB_USERNAME}}"
+    assignees:
+      - "{{GITHUB_USERNAME}}"
+    commit-message:
+      prefix: "deps(python)"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "python"
+      - "automated"
+    allow:
+      - dependency-type: "direct"
+      - dependency-type: "indirect"
+    ignore:
+      # Ignore major version updates for critical Python dependencies
+      - dependency-name: "django"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "flask"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "fastapi"
+        update-types: ["version-update:semver-major"]
+
+  # Docker dependencies
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+      time: "04:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "{{GITHUB_USERNAME}}"
+    assignees:
+      - "{{GITHUB_USERNAME}}"
+    commit-message:
+      prefix: "deps(docker)"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "docker"
+      - "automated"
+
+  # GitHub Actions dependencies
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "thursday"
+      time: "04:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "{{GITHUB_USERNAME}}"
+    assignees:
+      - "{{GITHUB_USERNAME}}"
+    commit-message:
+      prefix: "deps(actions)"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "github-actions"
+      - "automated"
+
+  # Terraform dependencies (if using Terraform)
+  - package-ecosystem: "terraform"
+    directory: "/infrastructure"
+    schedule:
+      interval: "weekly"
+      day: "friday"
+      time: "04:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 3
+    reviewers:
+      - "{{GITHUB_USERNAME}}"
+    assignees:
+      - "{{GITHUB_USERNAME}}"
+    commit-message:
+      prefix: "deps(terraform)"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "terraform"
+      - "infrastructure"
+      - "automated"
+
+  # Composer dependencies (PHP)
+  - package-ecosystem: "composer"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "saturday"
+      time: "04:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "{{GITHUB_USERNAME}}"
+    assignees:
+      - "{{GITHUB_USERNAME}}"
+    commit-message:
+      prefix: "deps(php)"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "php"
+      - "automated"
+
+  # Go modules (Go)
+  - package-ecosystem: "gomod"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "04:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "{{GITHUB_USERNAME}}"
+    assignees:
+      - "{{GITHUB_USERNAME}}"
+    commit-message:
+      prefix: "deps(go)"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "go"
+      - "automated"
+
+  # Cargo dependencies (Rust)
+  - package-ecosystem: "cargo"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "05:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "{{GITHUB_USERNAME}}"
+    assignees:
+      - "{{GITHUB_USERNAME}}"
+    commit-message:
+      prefix: "deps(rust)"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "rust"
+      - "automated"
+
+  # Gradle dependencies (Java)
+  - package-ecosystem: "gradle"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "06:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "{{GITHUB_USERNAME}}"
+    assignees:
+      - "{{GITHUB_USERNAME}}"
+    commit-message:
+      prefix: "deps(java)"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "java"
+      - "automated"
+
+  # Maven dependencies (Java)
+  - package-ecosystem: "maven"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "07:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "{{GITHUB_USERNAME}}"
+    assignees:
+      - "{{GITHUB_USERNAME}}"
+    commit-message:
+      prefix: "deps(maven)"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "maven"
+      - "automated"
+
+  # NuGet dependencies (.NET)
+  - package-ecosystem: "nuget"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "08:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "{{GITHUB_USERNAME}}"
+    assignees:
+      - "{{GITHUB_USERNAME}}"
+    commit-message:
+      prefix: "deps(dotnet)"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "dotnet"
+      - "automated"

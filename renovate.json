@@ -1,6 +1,313 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "Renovate configuration for automated dependency updates",
   "extends": [
-    "config:recommended"
+    "config:base",
+    "config:recommended",
+    ":semanticCommitTypeAll(deps)",
+    ":semanticCommitScopeDisabled",
+    "helpers:pinGitHubActionDigests"
+  ],
+  "timezone": "UTC",
+  "schedule": [
+    "before 5am on Monday"
+  ],
+  "labels": [
+    "dependencies",
+    "automated"
+  ],
+  "assignees": [
+    "{{GITHUB_USERNAME}}"
+  ],
+  "reviewers": [
+    "{{GITHUB_USERNAME}}"
+  ],
+  "prConcurrentLimit": 10,
+  "prHourlyLimit": 4,
+  "branchConcurrentLimit": 20,
+  "rebaseWhen": "behind-base-branch",
+  "semanticCommits": "enabled",
+  "dependencyDashboard": true,
+  "dependencyDashboardTitle": "📋 Dependency Dashboard",
+  "dependencyDashboardHeader": "This issue lists Renovate updates and detected dependencies. Read the [Dependency Dashboard](https://docs.renovatebot.com/key-concepts/dashboard/) docs to learn more.",
+  "dependencyDashboardFooter": "♻ This dashboard is updated and maintained by Renovate bot.",
+  "platformAutomerge": false,
+  "rangeStrategy": "bump",
+  "separateMinorPatch": true,
+  "separateMajorMinor": true,
+  "separateMultipleMajor": true,
+  "ignorePaths": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/build/**",
+    "**/coverage/**"
+  ],
+  "lockFileMaintenance": {
+    "enabled": true,
+    "automerge": true,
+    "schedule": [
+      "before 3am on Monday"
+    ]
+  },
+  "packageRules": [
+    {
+      "description": "Automerge patch updates",
+      "matchUpdateTypes": [
+        "patch"
+      ],
+      "automerge": true,
+      "automergeType": "pr",
+      "platformAutomerge": true
+    },
+    {
+      "description": "Automerge minor devDependencies",
+      "matchDepTypes": [
+        "devDependencies"
+      ],
+      "matchUpdateTypes": [
+        "minor"
+      ],
+      "automerge": true,
+      "automergeType": "pr"
+    },
+    {
+      "description": "Security updates - high priority",
+      "matchPackagePatterns": [
+        "*"
+      ],
+      "matchUpdateTypes": [
+        "patch"
+      ],
+      "vulnerabilityAlerts": {
+        "enabled": true
+      },
+      "labels": [
+        "security",
+        "dependencies"
+      ],
+      "reviewers": [
+        "{{GITHUB_USERNAME}}"
+      ],
+      "assignees": [
+        "{{GITHUB_USERNAME}}"
+      ],
+      "automerge": true,
+      "prPriority": 10
+    },
+    {
+      "description": "Group all non-major updates together",
+      "matchUpdateTypes": [
+        "patch",
+        "minor"
+      ],
+      "groupName": "all non-major dependencies",
+      "groupSlug": "all-minor-patch"
+    },
+    {
+      "description": "Group React ecosystem updates",
+      "matchPackagePatterns": [
+        "^react",
+        "^@types/react"
+      ],
+      "groupName": "React ecosystem",
+      "groupSlug": "react",
+      "labels": [
+        "react",
+        "dependencies"
+      ]
+    },
+    {
+      "description": "Group Vue ecosystem updates",
+      "matchPackagePatterns": [
+        "^vue",
+        "^@vue",
+        "^nuxt"
+      ],
+      "groupName": "Vue ecosystem",
+      "groupSlug": "vue",
+      "labels": [
+        "vue",
+        "dependencies"
+      ]
+    },
+    {
+      "description": "Group Angular ecosystem updates",
+      "matchPackagePatterns": [
+        "^@angular",
+        "^@ngrx"
+      ],
+      "groupName": "Angular ecosystem",
+      "groupSlug": "angular",
+      "labels": [
+        "angular",
+        "dependencies"
+      ]
+    },
+    {
+      "description": "Group testing dependencies",
+      "matchPackagePatterns": [
+        "jest",
+        "vitest",
+        "cypress",
+        "playwright",
+        "@testing-library",
+        "mocha",
+        "chai",
+        "sinon",
+        "supertest"
+      ],
+      "groupName": "Testing dependencies",
+      "groupSlug": "testing",
+      "labels": [
+        "testing",
+        "dependencies"
+      ]
+    },
+    {
+      "description": "Group linting and formatting tools",
+      "matchPackagePatterns": [
+        "eslint",
+        "prettier",
+        "@typescript-eslint",
+        "stylelint"
+      ],
+      "groupName": "Linting and formatting",
+      "groupSlug": "linting",
+      "labels": [
+        "linting",
+        "dependencies"
+      ],
+      "automerge": true
+    },
+    {
+      "description": "Group build tools",
+      "matchPackagePatterns": [
+        "webpack",
+        "vite",
+        "rollup",
+        "esbuild",
+        "babel",
+        "@babel"
+      ],
+      "groupName": "Build tools",
+      "groupSlug": "build-tools",
+      "labels": [
+        "build-tools",
+        "dependencies"
+      ]
+    },
+    {
+      "description": "Group TypeScript and related packages",
+      "matchPackagePatterns": [
+        "typescript",
+        "@types/"
+      ],
+      "groupName": "TypeScript and types",
+      "groupSlug": "typescript",
+      "labels": [
+        "typescript",
+        "dependencies"
+      ]
+    },
+    {
+      "description": "Docker base images - weekly updates",
+      "matchDatasources": [
+        "docker"
+      ],
+      "matchPackagePatterns": [
+        "node",
+        "python",
+        "nginx",
+        "postgres",
+        "redis"
+      ],
+      "schedule": [
+        "before 6am on Sunday"
+      ],
+      "labels": [
+        "docker",
+        "dependencies"
+      ]
+    },
+    {
+      "description": "Major version updates - require manual review",
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "dependencyDashboardApproval": true,
+      "labels": [
+        "major-update",
+        "dependencies",
+        "needs-review"
+      ],
+      "reviewers": [
+        "{{GITHUB_USERNAME}}"
+      ],
+      "assignees": [
+        "{{GITHUB_USERNAME}}"
+      ]
+    },
+    {
+      "description": "Pin GitHub Actions to digest",
+      "matchManagers": [
+        "github-actions"
+      ],
+      "pinDigests": true,
+      "labels": [
+        "github-actions",
+        "dependencies"
+      ]
+    },
+    {
+      "description": "Ignore certain packages",
+      "matchPackageNames": [
+        "node",
+        "npm"
+      ],
+      "enabled": false
+    }
+  ],
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "labels": [
+      "security",
+      "vulnerability"
+    ],
+    "assignees": [
+      "{{GITHUB_USERNAME}}"
+    ],
+    "reviewers": [
+      "{{GITHUB_USERNAME}}"
+    ]
+  },
+  "osvVulnerabilityAlerts": true,
+  "configWarningReuseIssue": false,
+  "onboarding": false,
+  "requireConfig": "optional",
+  "regexManagers": [
+    {
+      "description": "Update _VERSION variables in Dockerfiles",
+      "fileMatch": [
+        "(^|/|\\.)Dockerfile$",
+        "(^|/)Dockerfile\\.[^/]*$"
+      ],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>[a-z-]+?) depName=(?<depName>[^\\s]+?)(?: (?:lookupName|packageName)=(?<packageName>[^\\s]+?))?(?: versioning=(?<versioning>[^\\s]+?))?\\s(?:ENV|ARG) [A-Z_]+?_VERSION=(?<currentValue>.+?)\\s"
+      ]
+    }
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Update version in package.json files",
+      "fileMatch": [
+        "package\\.json$"
+      ],
+      "matchStrings": [
+        "\"version\":\\s*\"(?<currentValue>[^\"]+)\""
+      ],
+      "depNameTemplate": "{{packageFile}}",
+      "datasourceTemplate": "npm"
+    }
   ]
 }
