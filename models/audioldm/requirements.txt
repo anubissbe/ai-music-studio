@@ -3,7 +3,7 @@ flask-cors==4.0.0
 requests==2.31.0
 torchaudio==2.1.0
 librosa==0.10.1
-transformers==4.32.0
+transformers==4.50.0
 diffusers>=0.29.0          # Upgrade to >=0.29.0 to avoid cached_download issues ([github.com](https://github.com/huggingface/huggingface_hub/issues/2617?utm_source=chatgpt.com))
 huggingface_hub>=0.15.1    # Ensure compatibility with diffusers
 accelerate>=0.18.0

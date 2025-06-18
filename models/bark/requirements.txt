@@ -3,7 +3,7 @@ flask-cors==4.0.0
 requests==2.31.0
 torchaudio==2.1.0
 librosa==0.10.1
-transformers==4.32.0
+transformers==4.50.0
 bark           # officiële Bark package
 numpy==1.24.3
 soundfile==0.12.1
