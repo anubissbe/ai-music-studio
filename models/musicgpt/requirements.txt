@@ -8,4 +8,4 @@ audiocraft==1.0.0
 pydub==0.25.1
 numpy==1.24.3
 soundfile==0.12.1
-werkzeug==2.0.3
+werkzeug==3.0.6

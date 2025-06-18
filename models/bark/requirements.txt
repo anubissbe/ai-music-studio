@@ -7,5 +7,5 @@ transformers==4.32.0
 bark           # officiële Bark package
 numpy==1.24.3
 soundfile==0.12.1
-werkzeug==2.0.3
+werkzeug==3.0.6
 pydub
