@@ -45,7 +45,7 @@ jobs:
       matrix: ${{ steps.matrix.outputs.matrix }}
     steps:
       - name: 📥 Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -167,18 +167,18 @@ jobs:
     needs: setup
     steps:
       - name: 📥 Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: 🟢 Setup Node.js
         if: needs.setup.outputs.language == 'javascript' || needs.setup.outputs.language == 'unknown'
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: ${{ needs.setup.outputs.package-manager }}
 
       - name: 🐍 Setup Python
         if: needs.setup.outputs.language == 'python'
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c # v4
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: 'pip'
@@ -258,24 +258,24 @@ jobs:
       actions: read
     steps:
       - name: 📥 Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0
 
       - name: 🔍 CodeQL Analysis
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@a2983b8bed1923f44751c5c43237f479442827b3 # v3
         with:
           languages: ${{ needs.setup.outputs.language == 'python' && 'python' || 'javascript' }}
           queries: security-and-quality
 
       - name: 🏗️ CodeQL Autobuild
-        uses: github/codeql-action/autobuild@v3
+        uses: github/codeql-action/autobuild@a2983b8bed1923f44751c5c43237f479442827b3 # v3
 
       - name: 📊 CodeQL Results
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@a2983b8bed1923f44751c5c43237f479442827b3 # v3
 
       - name: 🛡️ Trivy Filesystem Scan
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@c07df6fec6fa692e6fd1200d50aaa1fdd66f03c8 # master
         with:
           scan-type: 'fs'
           scan-ref: '.'
@@ -283,7 +283,7 @@ jobs:
           output: 'trivy-fs-results.sarif'
 
       - name: 📤 Upload Trivy Filesystem Results
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@a2983b8bed1923f44751c5c43237f479442827b3 # v3
         if: always()
         with:
           sarif_file: 'trivy-fs-results.sarif'
@@ -325,18 +325,18 @@ jobs:
       fail-fast: false
     steps:
       - name: 📥 Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: 🟢 Setup Node.js
         if: needs.setup.outputs.language == 'javascript' || needs.setup.outputs.language == 'unknown'
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: ${{ needs.setup.outputs.package-manager }}
 
       - name: 🐍 Setup Python
         if: needs.setup.outputs.language == 'python'
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c # v4
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: 'pip'
@@ -387,7 +387,7 @@ jobs:
 
       - name: 📈 Upload Coverage to Codecov
         if: secrets.CODECOV_TOKEN
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@ab904c41d6ece82784817410c45d8b8c02684457 # v3
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           directory: ${{ matrix.directory }}
@@ -401,12 +401,12 @@ jobs:
     if: secrets.SONARCLOUD_TOKEN
     steps:
       - name: 📥 Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0
 
       - name: 📊 SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@master
+        uses: SonarSource/sonarcloud-github-action@ba3875ecf642b2129de2b589510c81a8b53dbf4e # master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONARCLOUD_TOKEN }}
@@ -424,18 +424,18 @@ jobs:
       image-tags: ${{ steps.meta.outputs.tags }}
     steps:
       - name: 📥 Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: 🟢 Setup Node.js
         if: needs.setup.outputs.language == 'javascript' || needs.setup.outputs.language == 'unknown'
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: ${{ needs.setup.outputs.package-manager }}
 
       - name: 🐍 Setup Python
         if: needs.setup.outputs.language == 'python'
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c # v4
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: 'pip'
@@ -466,11 +466,11 @@ jobs:
 
       - name: 🐳 Set up Docker Buildx
         if: needs.setup.outputs.has-docker == 'true'
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
 
       - name: 🔑 Login to Container Registry
         if: needs.setup.outputs.has-docker == 'true'
-        uses: docker/login-action@v3
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -479,7 +479,7 @@ jobs:
       - name: 🏷️ Extract Metadata
         if: needs.setup.outputs.has-docker == 'true'
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-${{ matrix.component }}
           tags: |
@@ -491,7 +491,7 @@ jobs:
       - name: 🐳 Build and Push Docker Image
         if: needs.setup.outputs.has-docker == 'true'
         id: build
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5
         with:
           context: ${{ matrix.directory }}
           file: ${{ matrix.directory }}/${{ matrix.dockerfile }}
@@ -503,7 +503,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: 📦 Archive Build Artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: build-artifacts-${{ matrix.component }}
           path: |
@@ -522,14 +522,14 @@ jobs:
       matrix: ${{ fromJson(needs.setup.outputs.matrix) }}
     steps:
       - name: 🛡️ Trivy Container Scan
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@c07df6fec6fa692e6fd1200d50aaa1fdd66f03c8 # master
         with:
           image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-${{ matrix.component }}@${{ needs.build.outputs.image-digest }}
           format: 'sarif'
           output: 'trivy-container-results.sarif'
 
       - name: 📤 Upload Trivy Container Results
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@a2983b8bed1923f44751c5c43237f479442827b3 # v3
         if: always()
         with:
           sarif_file: 'trivy-container-results.sarif'
@@ -540,7 +540,7 @@ jobs:
           syft ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-${{ matrix.component }}@${{ needs.build.outputs.image-digest }} -o spdx-json=sbom.json
 
       - name: 📤 Upload SBOM
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: sbom-${{ matrix.component }}
           path: sbom.json
@@ -556,11 +556,11 @@ jobs:
       url: ${{ steps.deploy.outputs.url }}
     steps:
       - name: 📥 Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: 🐳 Login to DockerHub
         if: secrets.DOCKERHUB_TOKEN
-        uses: docker/login-action@v3
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -593,7 +593,7 @@ jobs:
 
       - name: 🎉 Create Release
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
-        uses: actions/create-release@v1
+        uses: actions/create-release@0cb9c9b65d5d1901c1f53e5e66eaf4afd303e70e # v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
