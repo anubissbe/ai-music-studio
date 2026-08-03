@@ -3,9 +3,9 @@ flask-cors==4.0.0
 requests==2.31.0
 transformers==4.32.0
 diffusers>=0.29.0
-accelerate>=0.18.0
-librosa==0.10.1
-numpy==1.24.3
-soundfile==0.12.1
+accelerate>=0.34.2
+librosa==0.11.0
+numpy==1.26.4
+soundfile==0.14.0
 werkzeug==2.0.3
 pydub

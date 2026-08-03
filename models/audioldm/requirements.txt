@@ -1,13 +1,13 @@
 flask==2.0.1
 flask-cors==4.0.0
 requests==2.31.0
-torchaudio==2.1.0
-librosa==0.10.1
+torchaudio==2.11.0
+librosa==0.11.0
 transformers==4.32.0
 diffusers>=0.29.0          # Upgrade to >=0.29.0 to avoid cached_download issues ([github.com](https://github.com/huggingface/huggingface_hub/issues/2617?utm_source=chatgpt.com))
-huggingface_hub>=0.15.1    # Ensure compatibility with diffusers
-accelerate>=0.18.0
-numpy==1.24.3
-soundfile==0.12.1
+huggingface_hub>=0.36.2    # Ensure compatibility with diffusers
+accelerate>=0.34.2
+numpy==1.26.4
+soundfile==0.14.0
 werkzeug==2.0.3
 pydub
