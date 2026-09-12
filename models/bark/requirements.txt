@@ -1,11 +1,11 @@
 flask==2.0.1
 flask-cors==4.0.0
 requests==2.31.0
-torchaudio==2.1.0
-librosa==0.10.1
+torchaudio==2.1.2
+librosa==0.10.2.post1
 transformers==4.32.0
 bark           # officiële Bark package
-numpy==1.24.3
+numpy==1.24.4
 soundfile==0.12.1
 werkzeug==2.0.3
 pydub
